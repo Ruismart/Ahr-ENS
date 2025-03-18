@@ -1,0 +1,2110 @@
+---
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+--- 
+
+
+# sn10x, Colon               
+          
+         
+(only 1/2 datasize to standard level)             
+           
+                   
+Baf53cre ENS neurons,                
+CR infection 7d, CTL x4  CKO(Ahr-cko) x4             
+        
+loading 60k cells for all,          
+cellranger called 24,758 cells             
+            
+        
+pure neurons downstream            
+
+
+##### load dependancies                
+```{r message=FALSE, warning=FALSE, include=FALSE}
+source("I:/Shared_win/projects/RNA_normal/analysis.10x.r")
+```  
+
+
+## load obj               
+
+
+```{r}
+GEX.seur <- readRDS("./GEX0925.seur.preAnno.rds")
+GEX.seur
+``` 
+
+
+```{r}
+color.FB <- ggsci::pal_d3("category20c")(20)[c(1,6,11,16,
+                                               2,7,12,17
+                                               )]
+
+color.cnt <- color.FB[c(1,5)]
+
+color.pre <-c("#678BB1","#8AB6CE","#3975C1","#669FDF","#4CC1BD",
+              "#BF7E6B","#D46B35","#F19258","#FF8080",
+              "#BDAE8D","#BD66C4","#C03778",
+              "#97BA59","#DFAB16","#2BA956","#9FE727"#,
+              #"red"
+              )
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno", cols = c(color.pre,"red") ) +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+### filtering                 
+
+
+```{r}
+GEX.seur <- subset(GEX.seur,subset = preAnno != "Mix" & DoubletFinder0.1 == "Singlet")
+GEX.seur
+```
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno", cols = color.pre) +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+```{r fig.height=5, fig.width=12.5}
+markers.new.s <- list(EMN=c("Chat","Bnc2","Tox","Ptprt",
+                       "Gfra2","Oprk1","Adamtsl1", 
+                       "Fbxw15","Fbxw24","Chrna7",
+                       "Satb1","Cntnap5b",
+                       "Gabrb1","Nxph1","Lama2","Lrrc7",
+                       "Ryr3","Eda","Tac1",
+                       "Kctd8","Ntrk2","Penk",
+                       "Fut9","Nfatc1","Egfr","Mgll",
+                       "Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       "Man1a","Airn",
+                       "Adcy2","Cmah","Creb5","Vip","Pde1a",
+                       "Ebf1","Gpc5"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Kcnk13",
+                      "Neurod6","Moxd1","Sctr",
+                      "Piezo1","Sst","Adamts9","Kcnn2",
+                      "Calb2"),
+                 IPAN=c("Calcb","Nmu","Adgrg6","Pcdh10",
+                        "Ngfr","Galr1","Il7","Aff2",
+                        "Gpr149","Cdh6","Cdh8",
+                        "Clstn2","Ano2","Ntrk3",
+                        "Cpne4","Vwc2l","Cdh9","Scgn",
+                        "Vcan","Cck","Piezo2","Kcnh7",
+                        "Rerg","Bmpr1b","Skap1","Ntng1",
+                        "Tafa2","Nxph2"),
+                 CONTAM=c("Actl6b","Phox2b"))
+
+pm.All_new.s <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "preAnno",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="All")
+pm.All_new.s
+
+pm.CTL_new.s <- DotPlot(subset(GEX.seur,subset=cnt %in% c("CTL")), features = as.vector(unlist(markers.new.s)), group.by = "preAnno",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="CTL only")
+pm.CTL_new.s
+
+pm.CKO_new.s <- DotPlot(subset(GEX.seur,subset=cnt %in% c("CKO")), features = as.vector(unlist(markers.new.s)), group.by = "preAnno",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="CKO only")
+pm.CKO_new.s
+```
+
+
+```{r fig.width=8.1, fig.height=6}
+VlnPlot(subset(GEX.seur, subset = cnt %in% c("CTL")), 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 2, pt.size = 0.01, group.by = "preAnno")
+VlnPlot(subset(GEX.seur, subset = cnt %in% c("CKO")), 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 2, pt.size = 0.01, group.by = "preAnno")
+```
+
+
+### re-clustering            
+
+
+```{r message=FALSE, warning=FALSE,fig.width=12,fig.height=5}
+GEX.seur <- FindVariableFeatures(GEX.seur, selection.method = "vst", nfeatures = 1500)
+
+# Identify the 10 most highly variable genes
+#top10 <- head(VariableFeatures(GEX.seur), 10)
+top20 <- head(VariableFeatures(GEX.seur), 20)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(GEX.seur)
+plot2 <- LabelPoints(plot = plot1, points = top20, repel = T)
+plot1 + plot2
+```
+
+
+```{r}
+head(VariableFeatures(GEX.seur), 200)
+```
+
+```{r}
+GEX.seur <- ScaleData(GEX.seur, features = rownames(GEX.seur))
+```
+
+
+#### PCA       
+
+```{r}
+# exclude MT genes  and more 
+
+#DIG <- grep("^Tra|^Trb|^Trg|^Trd|^Tcr|^Igm|^Igh|^Igk|^Igl|Jchain|^Hsp|^Rps|^Rpl|Hbb-|Hba-|^Dnaj|^AY|^Gm|^Hist",rownames(GEX.seur),value = T)
+
+DIG <- grep("^mt-|^Tra|^Trb|^Trg|^Trd|^Tcr|^Igm|^Igh|^Igk|^Igl|Jchain|Mzb1|Vpreb|Lars2|Jun|Fos|^Hsp|^Rps|^Rpl|Hbb-|Hba-|^Dnaj|^AY|^AC|^AA|^AI|^AW|^BC|^Gm|^Hist|Rik$|-ps",
+            rownames(GEX.seur),value = T)
+CC_gene <- Hmisc::capitalize(tolower(as.vector(unlist(cc.genes.updated.2019))))
+
+
+VariableFeatures(GEX.seur) <- setdiff(VariableFeatures(object = GEX.seur),
+                                                c(#MT_gene,
+                                                  DIG, 
+                                                  CC_gene) )
+
+GEX.seur <- RunPCA(GEX.seur, features = VariableFeatures(GEX.seur))
+```
+
+
+```{r}
+length(setdiff(VariableFeatures(object = GEX.seur),
+                                                c(#MT_gene,
+                                                  DIG,CC_gene)))
+setdiff(VariableFeatures(object = GEX.seur),
+                                                c(#MT_gene,
+                                                  DIG,CC_gene))[1:300]
+```
+
+```{r fig.width=11,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "orig.ident") +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "orig.ident")
+```
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "FB.info", cols = color.FB) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "FB.info", cols = color.FB)
+```
+
+
+```{r pcsheat,fig.width=12,fig.height=15}
+DimHeatmap(GEX.seur, dims = 1:12, cells = 1500, balanced = TRUE,ncol = 4)
+```
+
+
+##### decide PCs to use          
+     
+```{r}
+ElbowPlot(GEX.seur,ndims = 50)
+```
+
+```{r}
+PCs <- 1:24
+GEX.seur <- FindNeighbors(GEX.seur, dims = PCs, k.param = 20)
+GEX.seur <- FindClusters(GEX.seur, method = 'igraph' ,resolution = 2.6)
+```
+
+#### Run UMAP/tSNE    
+
+```{r}
+GEX.seur <- RunTSNE(GEX.seur, dims=PCs, complexity = 100)
+GEX.seur <- RunUMAP(GEX.seur, dims=PCs, n.neighbors = 20, seed.use = 998)
+```
+
+```{r fig.width=11.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "tsne", label = T) + DimPlot(GEX.seur, reduction = "umap", label = T)
+```
+
+```{r}
+#saveRDS(GEX.seur,"GEX.pure_reclustering.temp.rds")
+```
+
+
+```{r fig.width=12, fig.height=7.5}
+FeaturePlot(GEX.seur, features = c(#"Chat"
+                                   "Bnc2","Fut9","Nos1","Vip",
+                                   "Gal","Moxd1","Sst","Calcb",
+                                   "Nmu","Cdh9","Piezo2","Nxph2"),
+            pt.size = 0.001,
+            ncol = 4)
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno", cols = color.pre) +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+```{r fig.width=11.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno", cols = color.pre) + DimPlot(GEX.seur, reduction = "umap", label = T)
+```
+
+
+## Anno              
+
+
+```{r paged.print=FALSE}
+GEX.seur@meta.data[,grep("pANN|snn|sort",colnames(GEX.seur@meta.data),value = T)] <- NULL
+head(GEX.seur@meta.data)
+```
+
+
+```{r}
+GEX.seur$sort_clusters <- factor(as.character(GEX.seur$seurat_clusters),
+                                 levels = c(4,9,7,11, 21,16, 3, 18, 19,    # EMN
+                                            2,12,5,1,10, 0,15, 20, 8,22,    # IMN
+                                            23, 25, 13,6,       # IN
+                                            14, 26, 24, 17   # IPAN
+                                            ))
+```
+
+
+```{r fig.width=12, fig.height=6}
+# C22, give to IMN4 or IPAN3 ? IMN4 for high Nos1/Vip level ! 
+# but should know it has higher Ntng1/Piezo2 which is closer to IPAN3, well, indeed linked 
+VlnPlot(GEX.seur, features = c("Nos1","Vip","Ntng1","Piezo2"),
+        ncol = 2, group.by = "sort_clusters")
+```
+
+
+
+```{r}
+GEX.seur$Anno <- as.character(GEX.seur$seurat_clusters)
+
+GEX.seur$Anno[GEX.seur$Anno %in% c(4,9,7,11)] <- "EMN1"
+GEX.seur$Anno[GEX.seur$Anno %in% c(21,16)] <- "EMN2"
+GEX.seur$Anno[GEX.seur$Anno %in% c(3)] <- "EMN3"
+GEX.seur$Anno[GEX.seur$Anno %in% c(18)] <- "EMN4"
+GEX.seur$Anno[GEX.seur$Anno %in% c(19)] <- "EMN5"
+
+GEX.seur$Anno[GEX.seur$Anno %in% c(2,12,5,1,10)] <- "IMN1"
+GEX.seur$Anno[GEX.seur$Anno %in% c(0,15)] <- "IMN2"
+GEX.seur$Anno[GEX.seur$Anno %in% c(20)] <- "IMN3"
+GEX.seur$Anno[GEX.seur$Anno %in% c(8,22)] <- "IMN4"
+
+GEX.seur$Anno[GEX.seur$Anno %in% c(23)] <- "IN1"
+GEX.seur$Anno[GEX.seur$Anno %in% c(25)] <- "IN2"
+GEX.seur$Anno[GEX.seur$Anno %in% c(13,6)] <- "IN3"
+
+GEX.seur$Anno[GEX.seur$Anno %in% c(14)] <- "IPAN1"
+GEX.seur$Anno[GEX.seur$Anno %in% c(26)] <- "IPAN2"
+GEX.seur$Anno[GEX.seur$Anno %in% c(24)] <- "IPAN3"
+GEX.seur$Anno[GEX.seur$Anno %in% c(17)] <- "IPAN4"
+
+GEX.seur$Anno <- factor(GEX.seur$Anno)
+
+```
+
+
+```{r fig.width=11.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno", cols = color.pre) + DimPlot(GEX.seur, reduction = "umap", label = T)
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno", cols = color.pre) +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+```{r eval=FALSE, include=FALSE}
+# umap0
+pdf("./figures.202409/umap.Colon_CR7d.Ahr_CTLvsCKO.pdf",
+    width = 10.8, height = 4.5)
+
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno", cols = color.pre) +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+
+dev.off()
+```
+
+
+
+## final markers            
+
+```{r}
+markers.new.ss <- list(EMN=c("Chat","Bnc2","Tox","Ptprt",
+                       "Gfra2","Oprk1","Adamtsl1", 
+                       "Fbxw15","Fbxw24","Chrna7",
+                       "Satb1","Itga6","Cntnap5b",
+                       "Pgm5","Chgb",
+                       "Nxph1",
+                       "Gabrb1","Glp2r","Nebl",
+                       "Lrrc7",
+                       "Ryr3","Eda",
+                       "Hgf","Lama2","Efnb2",
+                       "Tac1",
+                       "Kctd8",
+                       "Ptn",
+                       "Ntrk2","Penk","Itgb8",
+                       "Fut9","Nfatc1","Egfr","Pdia5",
+                       "Ahr","Mgll",
+                       "Aff3",
+                       "Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       "Man1a","Airn",
+                       "Adcy2",
+                       "Col25a1",
+                       "Cmah","Creb5","Vip","Pde1a",
+                       "Ebf1","Gpc5","Mid1","Igfbp5",
+                       "Ppara",
+                       "Pcdh11x","Adcy8","Grp"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Nova1",
+                      "Cdh10","Kcnk13",
+                      "Neurod6","Moxd1","Sctr",
+                      "Piezo1","Vipr2","Adamts9","Sst","Kcnn2"
+                      ),
+                 IPAN=c("Calb2","Adcy1","Calcb","Nmu","Adgrg6","Pcdh10",
+                        "Ngfr","Galr1","Il7","Aff2",
+                        "Gpr149","Itgb6","Met","Itgbl1",
+                        
+                        "Cdh6","Cdh8",
+                        "Clstn2","Ano2","Ntrk3",
+                        "Cpne4","Vwc2l","Cdh9",
+                        "Car10","Dcc",
+                        "Scgn",
+                        "Vcan","Cck","Piezo2","Kcnh7",
+                        "Rerg","Bmpr1b","Skap1","Ntng1",
+                        "Tafa2","Nxph2"),
+                 check0407 = c("Gcg","Glp2r","Insl5","Nts",
+               "Ntsr1","Ntsr2","Pyy",#"Sst",
+               "Gip","Sct","Sctr","Ghrl"))
+```
+
+
+```{r}
+check.markers.ss <- as.vector(unlist(markers.new.ss))
+check.markers.ss
+```
+
+
+```{r fig.height=5.5, fig.width=16.5}
+check.markers.sss <- check.markers.ss[check.markers.ss %in% rownames(GEX.seur)]
+
+pm.All_pre <- DotPlot(GEX.seur, features = rev(unique(rev(check.markers.sss))), group.by = "Anno",assay = "RNA",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="check previous markers")
+pm.All_pre
+
+```
+
+
+just directly using final markers used in SI data sets                
+
+
+
+### short_old          
+
+
+```{r}
+## define feature colors
+# Cell2020     
+material.heat = function(n){
+  colorRampPalette(
+    c(
+      "#283593", # indigo 800
+      "#3F51B5", # indigo
+      "#2196F3", # blue
+      "#00BCD4", # cyan
+      "#4CAF50", # green
+      "#8BC34A", # light green
+      "#CDDC39", # lime
+      "#FFEB3B", # yellow
+      "#FFC107", # amber
+      "#FF9800", # orange
+      "#FF5722"  # deep orange
+    )
+  )(n)
+}
+```
+
+
+```{r}
+markers.old.s <- list(EMN=c("Chat","Bnc2",#"Tox","Ptprt",
+                       "Gfra2","Oprk1",#"Adamtsl1", 
+                       "Fbxw15","Fbxw24",#"Chrna7",
+                       "Satb1","Cntnap5b",
+                       "Gabrb1","Nxph1","Lama2","Lrrc7",
+                       "Ryr3",#"Eda",
+                       "Tac1",
+                       #"Kctd8","Ntrk2",
+                       "Penk", 
+                       "Fut9","Nfatc1","Egfr","Ahr"#,#"Mgll",
+                       #"Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       #"Man1a","Airn",
+                       "Adcy2","Cmah","Creb5","Vip","Pde1a",
+                       "Ebf1"#,"Gpc5"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Neurod6",
+                      #"Kcnk13",
+                      "Moxd1","Sctr",
+                      "Piezo1","Sst",#"Adamts9",
+                      "Kcnn2"),
+                 IPAN=c("Calb2","Calcb","Nmu","Adgrg6",#"Pcdh10",
+                        "Ngfr","Galr1","Il7",#"Aff2",
+                        #"Gpr149",
+                        "Cdh6","Cdh8",
+                        "Clstn2",#"Ano2","Ntrk3",
+                        "Cpne4",#"Vwc2l",
+                        "Cdh9","Scgn",
+                        #"Vcan",
+                        "Cck","Piezo2","Kcnh7",
+                        #"Rerg",
+                        "Bmpr1b","Skap1","Ntng1",
+                        "Tafa2","Nxph2"))
+```
+
+
+```{r fig.height=4.75, fig.width=11.5, message=FALSE, warning=FALSE}
+pn.Anno.test0a <- DotPlot(GEX.seur, features = as.vector(unlist(markers.old.s)), group.by = "Anno",
+        cols = c("midnightblue","darkorange1")) +
+  #coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) +
+  #scale_x_discrete(limits=rev) + 
+  scale_y_discrete(limits=rev) #+ 
+  #labs(title="")
+pn.Anno.test0a
+```
+
+             
+##### comparing with SI data annotations, here in Colon, EMN4/5 should be SI:EMN5 but larger into two parts      
+##### similarly, larger Sst+ IN3 into two parts and directly linked to EMNs          
+      
+##### IPAN2 becomes a small tail of IPAN1, this is caused by sampling ? while in Cell2020 newAnno, IPAN2 still has a similar level         
+      
+##### some markers also have some different performance, but the main sub-celltypes should be matched ~          
+        
+
+```{r fig.height=10.5, fig.width=6, message=FALSE, warning=FALSE}
+pn.Anno.test0b <- DotPlot(GEX.seur, features = as.vector(unlist(markers.old.s)), group.by = "Anno",
+        cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.4,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) #+
+  #scale_x_discrete(limits=rev) + scale_y_discrete(limits=rev) + 
+  #labs(title="All Anno")
+pn.Anno.test0b
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("figures.202409/dotplot.old_addAhr.Colon_CR7d.a.pdf",
+       width = 12.75,height = 4.35,
+       plot = pn.Anno.test0a)
+
+ggsave("figures.202409/dotplot.old_addAhr.Colon_CR7d.b.pdf",
+       width = 6.4,height = 10.8,
+       plot = pn.Anno.test0b)
+```
+
+
+### short_new         
+
+
+```{r}
+markers.new.s <- list(EMN=c("Chat","Bnc2",#"Tox","Ptprt",
+                       "Gfra2","Oprk1",#"Adamtsl1", 
+                       "Fbxw15","Fbxw24",#"Chrna7",
+                       "Satb1","Itga6","Cntnap5b",
+                       "Chgb","Nxph1",
+                       "Lama2","Efnb2","Itgb8",
+                       "Lrrc7",
+                       "Ryr3",#"Eda",
+                       "Tac1",
+                       #"Kctd8","Ntrk2",
+                       "Penk",
+                       "Fut9","Nfatc1","Egfr","Ahr"#"Mgll",
+                       #"Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       #"Man1a","Airn",
+                       "Adcy2","Cmah","Col25a1",
+                       "Mid1","Creb5","Vip","Pde1a",
+                       "Ebf1",#,"Gpc5"
+                       "Ppara","Pcdh11x",
+                       "Adcy8","Grp"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Cdh10","Neurod6",
+                      "Kcnk13",
+                      "Moxd1","Sctr",
+                      "Piezo1","Vipr2","Sst",#"Adamts9",
+                      "Kcnn2"
+                      ),
+                 IPAN=c("Calb2","Adcy1",
+                        "Nmu","Adgrg6",#"Pcdh10",
+                        "Ngfr","Il7",
+                        "Itgb6","Calcb","Galr1",
+                        #"Aff2",
+                        #"Gpr149",
+                        "Met",
+                        "Cpne4","Cdh6","Cdh8",
+                        "Clstn2",#"Ano2","Ntrk3",
+                        #"Vwc2l",
+                        "Car10","Scgn","Glp2r","Cck",
+                        "Cdh9",
+                        #"Vcan",
+                        "Dcc",
+                        "Gabrb1",
+                        "Piezo2","Kcnh7",
+                        #"Rerg",
+                        "Bmpr1b","Ntng1","Skap1",
+                        "Tafa2","Nxph2"))
+```
+
+
+```{r fig.height=4.75, fig.width=14.5, message=FALSE, warning=FALSE}
+pm.Anno.test0a <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "Anno",
+        cols = c("midnightblue","darkorange1")) +
+  #coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) +
+  #scale_x_discrete(limits=rev) + 
+  scale_y_discrete(limits=rev) #+ 
+  #labs(title="All Anno")
+pm.Anno.test0a
+```
+
+
+```{r fig.height=13.5, fig.width=6, message=FALSE, warning=FALSE}
+pm.Anno.test0b <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "Anno",
+        cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.4,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) #+
+  #scale_x_discrete(limits=rev) + scale_y_discrete(limits=rev) + 
+  #labs(title="All Anno")
+pm.Anno.test0b
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("figures.202409/dotplot.new_addAhr.Colon_CR7d.a.pdf",
+       width = 15.6,height = 4.5,
+       plot = pm.Anno.test0a)
+
+ggsave("figures.202409/dotplot.new_addAhr.Colon_CR7d.b.pdf",
+       width = 6.5,height = 15,
+       plot = pm.Anno.test0b)
+```
+
+
+
+
+### plot for ref.data            
+
+#### ref1.Cell2020 snSS2 Colon                                  
+             
+https://doi.org/10.1016/j.cell.2020.08.003            
+https://singlecell.broadinstitute.org/single_cell/study/SCP1038              
+            
+            
+```{r}
+# Cell2020, Anno1: PEMN/PIMN/PIN/PSN/PSVN.. exactly as fig.2a in the paper
+color.ref1.1 <- c("#F8766D","#ED8141","#E08B00","#CF9400","#BB9D00",
+                  "#5BB300","#00B81F","#00BC59","#00BF7D","#00C19C","#00C0B8","#00BDD0",
+                  "#00B0F6","#00A5FF","#7997FF",
+                  "#AC88FF","#E770F3","#F763E0","#FF61C9",
+                  "#FF65AE","#FF6C91")
+
+# Anno2, similar to local
+color.ref1.2 <- c("#678BB1","#8AB6CE","#3975C1","#669FDF","#4CC1BD",
+                  "#BF7E6B","#D46B35","#F19258","#FF8080",
+                  "#BDAE8D","#BD66C4","#C03778",
+                  "#97BA59","#DFAB16","#2BA956","#9FE727"#,
+                  #"red"
+                  )
+
+```
+            
+             
+```{r}
+ref1.seur <- readRDS("/Shared_win/projects/ENS_data/SCP1038_ENS_scRNAseq_Cell2020/final_RAISIN/ss2_neur.newAnno2024.rds")
+ref1.seur
+```             
+             
+```{r fig.width=12,fig.height=4.5}
+DimPlot(ref1.seur, reduction = "umap", label = T, group.by = "Anno1", cols = color.ref1.1, label.size = 2.65) +
+  DimPlot(ref1.seur, reduction = "umap", label = T, group.by = "Anno2", cols = color.ref1.2, label.size = 3.45)
+```             
+             
+```{r eval=FALSE, include=FALSE}
+pdf("./figures.202409/ref1.Cell2020/umap.Cell2020_snSS2_Colon.neuron.pdf",
+    width = 12, height = 4.5)
+DimPlot(ref1.seur, reduction = "umap", label = T, group.by = "Anno1", cols = color.ref1.1, label.size = 2.65) +
+  DimPlot(ref1.seur, reduction = "umap", label = T, group.by = "Anno2", cols = color.ref1.2, label.size = 3.45)
+dev.off()
+```             
+             
+             
+
+```{r fig.height=4.75, fig.width=12.5, message=FALSE, warning=FALSE}
+pn.ref1.a <- DotPlot(ref1.seur, features = as.vector(unlist(markers.old.s)), group.by = "Anno2",
+        cols = c("midnightblue","darkorange1")) +
+  #coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) +
+  #scale_x_discrete(limits=rev) + 
+  scale_y_discrete(limits=rev) + 
+  labs(title="ref1.Cell2020 snSS2 Colon neuron")
+pn.ref1.a
+```
+
+      
+      
+```{r fig.height=11.5, fig.width=6, message=FALSE, warning=FALSE}
+pn.ref1.b <- DotPlot(ref1.seur, features = as.vector(unlist(markers.old.s)), group.by = "Anno2",
+        cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.4,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) +
+  #scale_x_discrete(limits=rev) + scale_y_discrete(limits=rev) + 
+  labs(title="ref1.Cell2020 snSS2 Colon neuron")
+pn.ref1.b
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("figures.202409/ref1.Cell2020/dotplot.old_addAhr.ref1.a.pdf",
+       width = 13.75,height = 4.75,
+       plot = pn.ref1.a)
+
+ggsave("figures.202409/ref1.Cell2020/dotplot.old_addAhr.ref1.b.pdf",
+       width = 7.2,height = 12.4,
+       plot = pn.ref1.b)
+```             
+
+
+```{r fig.height=5.35, fig.width=16.5, message=FALSE, warning=FALSE}
+pm.ref1.a <- DotPlot(ref1.seur, features = as.vector(unlist(markers.new.s)), group.by = "Anno2",
+        cols = c("midnightblue","darkorange1")) +
+  #coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) +
+  #scale_x_discrete(limits=rev) + 
+  scale_y_discrete(limits=rev) + 
+  labs(title="ref1.Cell2020 snSS2 Colon neuron")
+pm.ref1.a
+```
+
+      
+      
+```{r fig.height=14.5, fig.width=6.5, message=FALSE, warning=FALSE}
+pm.ref1.b <- DotPlot(ref1.seur, features = as.vector(unlist(markers.new.s)), group.by = "Anno2",
+        cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.4,size = 9.15))+ 
+  scale_color_gradientn(colours  = material.heat(100)) +
+  #scale_x_discrete(limits=rev) + scale_y_discrete(limits=rev) + 
+  labs(title="ref1.Cell2020 snSS2 Colon neuron")
+pm.ref1.b
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("figures.202409/ref1.Cell2020/dotplot.new_addAhr.ref1.a.pdf",
+       width = 16.75,height = 5.35,
+       plot = pm.ref1.a)
+
+ggsave("figures.202409/ref1.Cell2020/dotplot.new_addAhr.ref1.b.pdf",
+       width = 7.2,height = 16.4,
+       plot = pm.ref1.b)
+```
+
+
+
+#### ref2.NatNeur2021 sc10x SI       
+       
+https://www.nature.com/articles/s41593-020-00736-x             
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149524                
+                
+                
+                
+```{r}
+# NatNeur2021, Anno1: ENC1/2/3... as in the paper
+color.ref2.1 <- c("#8AB6CE","#678BB1","#3975C1","#4CC1BD",
+                  "#C03778","#97BA59","#DFAB16","#BF7E6B",
+                  "#D46B35","#BDAE8D","#BD66C4","#2BA956",
+                  "#FF8080","#FF8080","#FF8080","#FF0000")
+
+# Anno2, similar to local, 
+#      without Vip(hi) IMN3/4, 
+#      very few may be in the tail of IMN2 or mixed with IPAN3
+color.ref2.2 <- c("#678BB1","#8AB6CE","#3975C1","#669FDF","#4CC1BD",
+                  "#BF7E6B","#D46B35",#"#F19258","#FF8080",
+                  "#BDAE8D","#BD66C4","#C03778",
+                  "#97BA59","#DFAB16","#2BA956","#9FE727"#,
+                  #"red"
+                  )
+```
+
+
+
+```{r}
+ref2.seur <- readRDS("/Shared_win/projects/20230704_10x_SZJ/analysis_ref/GSE149524.P21.integration_Anno.s.rds")
+ref2.seur
+```
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(ref2.seur, reduction = "umap", label = T, group.by = "Anno1", cols = color.ref2.1) +
+  DimPlot(ref2.seur, reduction = "umap", label = T, group.by = "Anno2", cols = color.ref2.2)
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+pdf("./figures.202409/ref2.NatNeur2021/umap.NatNeur2021_GSE149524.P21.integration.pdf",
+    width = 11.5, height = 4.8)
+DimPlot(ref2.seur, reduction = "umap", label = T, group.by = "Anno1", cols = color.ref2.1) +
+  DimPlot(ref2.seur, reduction = "umap", label = T, group.by = "Anno2", cols = color.ref2.2)
+dev.off()
+```
+
+
+(dotplot already done in SI data integration part)              
+
+
+#### comparison                
+
+```{r}
+check.markers.ref <- c("Chat","Bnc2","Penk","Fut9",
+                       "Tac1","Ahr","Nos1","Etv1",
+                       "Vip","Gal","Moxd1","Sctr",
+                       "Piezo1","Sst","Calb2","Calcb",
+                       "Nmu","Cdh8","Cdh9","Cck",
+                       "Piezo2","Nxph2")
+```
+
+
+
+
+```{r}
+length(check.markers.ref)
+```
+
+```{r fig.width=13.5, fig.height=25}
+vln.check <- VlnPlot(GEX.seur, features = check.markers.ref, cols = color.pre,
+                    assay = "RNA", group.by = "Anno", ncol = 2, pt.size = 0.01) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.check
+``` 
+
+
+```{r fig.width=13.5, fig.height=25}
+vln.check.s <- VlnPlot(GEX.seur, features = check.markers.ref, cols = color.pre,
+                    assay = "RNA", group.by = "Anno", ncol = 2, pt.size = 0) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.check.s
+``` 
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/violin.check_markers.Colon_CR7d.pdf",
+       width = 13.5, height = 25,
+       plot = vln.check)
+
+ggsave("./figures.202409/violin.check_markers.Colon_CR7d.s.pdf",
+       width = 13.5, height = 25,
+       plot = vln.check.s)
+```
+
+
+```{r fig.width=13.5, fig.height=25}
+vln.ref1 <- VlnPlot(ref1.seur, features = check.markers.ref, cols = color.ref1.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0.01) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref1
+``` 
+
+```{r fig.width=13.5, fig.height=25}
+vln.ref1.s <- VlnPlot(ref1.seur, features = check.markers.ref, cols = color.ref1.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref1.s
+``` 
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/ref1.Cell2020/violin.check_markers.ref1.Cell2020.pdf",
+       width = 13.5, height = 25,
+       plot = vln.ref1)
+
+ggsave("./figures.202409/ref1.Cell2020/violin.check_markers.ref1.Cell2020.s.pdf",
+       width = 13.5, height = 25,
+       plot = vln.ref1.s)
+```
+
+
+```{r fig.width=12, fig.height=25}
+vln.ref2 <- VlnPlot(ref2.seur, features = check.markers.ref, cols = color.ref2.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0.01) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref2
+``` 
+
+
+```{r fig.width=12, fig.height=25}
+vln.ref2.s <- VlnPlot(ref2.seur, features = check.markers.ref, cols = color.ref2.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref2.s
+``` 
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/ref2.NatNeur2021/violin.check_markers.ref2.NatNeur2021.pdf",
+       width = 12, height = 25,
+       plot = vln.ref2)
+
+ggsave("./figures.202409/ref2.NatNeur2021/violin.check_markers.ref2.NatNeur2021.s.pdf",
+       width = 12, height = 25,
+       plot = vln.ref2.s)
+```
+
+
+#### normalize to neuron markers         
+
+```{r}
+# markers used in Cell2020
+# details see in 0.test_public/ref1.SCP1038_Cell2020/test202012.final_RAISIN
+
+neur.markers <- c("Tubb3","Elavl4","Ret","Phox2b", 
+                  "Chrnb4","Eml5","Smpd3","Tagln3", 
+                  "Snap25","Gpr22","Gdap1l1","Stmn3", 
+                  "Chrna3","Scg3","Syt4","Ncan", 
+                  "Crmp1","Adcyap1r1","Elavl3","Dlg2",
+                  "Cacna2d1", "Cacna2d2")
+
+
+
+#write.table(check.markers.ref,"./figures.202409/check.markers.txt", row.names = F, col.names = F, quote = F)
+#write.table(neur.markers,"./figures.202409/Cell2020.neuron.markers.txt", row.names = F, col.names = F, quote = F)
+```
+
+
+```{r}
+#
+ref1.seur$Ahr.raw <- ref1.seur@assays$RNA@data["Ahr",]
+ref1.seur$Ahr.norm <- ( ref1.seur@assays$RNA@data["Ahr",] - colMeans(ref1.seur@assays$RNA@data[neur.markers,]) ) / apply(ref1.seur@assays$RNA@data[neur.markers,],2,sd)
+
+ref1.seur$Sst.raw <- ref1.seur@assays$RNA@data["Sst",]
+ref1.seur$Sst.norm <- ( ref1.seur@assays$RNA@data["Sst",] - colMeans(ref1.seur@assays$RNA@data[neur.markers,]) ) / apply(ref1.seur@assays$RNA@data[neur.markers,],2,sd)
+
+#
+ref2.seur$Ahr.raw <- ref2.seur@assays$RNA@data["Ahr",]
+ref2.seur$Ahr.norm <- ( ref2.seur@assays$RNA@data["Ahr",] - colMeans(ref2.seur@assays$RNA@data[neur.markers,]) ) / apply(ref2.seur@assays$RNA@data[neur.markers,],2,sd)
+
+ref2.seur$Sst.raw <- ref2.seur@assays$RNA@data["Sst",]
+ref2.seur$Sst.norm <- ( ref2.seur@assays$RNA@data["Sst",] - colMeans(ref2.seur@assays$RNA@data[neur.markers,]) ) / apply(ref2.seur@assays$RNA@data[neur.markers,],2,sd)
+
+```
+
+
+```{r fig.width=12, fig.height=2.6}
+vln.Ahr.ref1 <- VlnPlot(ref1.seur, features = c("Ahr.raw","Ahr.norm"), ncol = 2, group.by = "Anno2", cols = color.ref1.2) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.Ahr.ref1
+
+vln.Sst.ref1 <- VlnPlot(ref1.seur, features = c("Sst.raw","Sst.norm"), ncol = 2, group.by = "Anno2", cols = color.ref1.2) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.Sst.ref1
+```
+
+
+```{r fig.width=12, fig.height=2.6}
+vln.Ahr.ref2 <- VlnPlot(ref2.seur, features = c("Ahr.raw","Ahr.norm"), ncol = 2, group.by = "Anno2", cols = color.ref2.2) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.Ahr.ref2
+
+vln.Sst.ref2 <- VlnPlot(ref2.seur, features = c("Sst.raw","Sst.norm"), ncol = 2, group.by = "Anno2", cols = color.ref2.2) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.Sst.ref2
+```
+
+
+```{r}
+ref1.seur$mark <- "ref1"
+ref2.seur$mark <- "ref2"
+```
+
+
+```{r fig.width=4, fig.height=3.6}
+vln.Ahr.ref1a <- VlnPlot(ref1.seur, features = c("Ahr.raw","Ahr.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Ahr.ref1a
+
+vln.Sst.ref1a <- VlnPlot(ref1.seur, features = c("Sst.raw","Sst.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Sst.ref1a
+```
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("./figures.202409/ref1.Cell2020/violin.ref1.raw_norm.Ahr.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Ahr.ref1a)
+
+ggsave("./figures.202409/ref1.Cell2020/violin.ref1.raw_norm.Sst.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Sst.ref1a)
+```
+
+
+
+```{r fig.width=4, fig.height=3.6}
+vln.Ahr.ref2a <- VlnPlot(ref2.seur, features = c("Ahr.raw","Ahr.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Ahr.ref2a
+
+vln.Sst.ref2a <- VlnPlot(ref2.seur, features = c("Sst.raw","Sst.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Sst.ref2a
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("./figures.202409/ref2.NatNeur2021/violin.ref2.raw_norm.Ahr.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Ahr.ref2a)
+
+ggsave("./figures.202409/ref2.NatNeur2021/violin.ref2.raw_norm.Sst.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Sst.ref2a)
+```
+
+
+
+
+##### calculate all parallelly                                 
+
+```{r}
+#
+for(NN in check.markers.ref){
+  
+  GEX.seur@meta.data[,paste0(NN,".norm")] <- (GEX.seur@assays$RNA@data[NN,] - colMeans(GEX.seur@assays$RNA@data[neur.markers,])) / apply(GEX.seur@assays$RNA@data[neur.markers,],2,sd)
+  
+}
+
+# ref1
+for(NN in check.markers.ref){
+  
+  ref1.seur@meta.data[,paste0(NN,".norm")] <- (ref1.seur@assays$RNA@data[NN,] - colMeans(ref1.seur@assays$RNA@data[neur.markers,])) / apply(ref1.seur@assays$RNA@data[neur.markers,],2,sd)
+  
+}
+
+# ref2
+for(NN in check.markers.ref){
+  
+  ref2.seur@meta.data[,paste0(NN,".norm")] <- (ref2.seur@assays$SCT@data[NN,] - colMeans(ref2.seur@assays$SCT@data[neur.markers,])) / apply(ref2.seur@assays$RNA@data[neur.markers,],2,sd)
+  
+}
+
+```
+
+```{r}
+check.markers.refb <- paste0(check.markers.ref,".norm")
+check.markers.refb 
+```
+
+```{r fig.height=25, fig.width=13.5, message=FALSE, warning=FALSE}
+vln.checkb <- VlnPlot(GEX.seur, features = check.markers.refb, cols = color.pre,
+                    assay = "RNA", group.by = "Anno", ncol = 2, pt.size = 0.01) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.checkb
+``` 
+
+
+```{r fig.height=25, fig.width=13.5, message=FALSE, warning=FALSE}
+vln.checkb.s <- VlnPlot(GEX.seur, features = check.markers.refb, cols = color.pre,
+                    assay = "RNA", group.by = "Anno", ncol = 2, pt.size = 0) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.checkb.s
+``` 
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/violin.check_markers.norm.Colon_CR7d.pdf",
+       width = 13.5, height = 25,
+       plot = vln.checkb)
+
+ggsave("./figures.202409/violin.check_markers.norm.Colon_CR7d.s.pdf",
+       width = 13.5, height = 25,
+       plot = vln.checkb.s)
+```
+
+
+
+
+```{r fig.width=13.5, fig.height=25}
+vln.ref1b <- VlnPlot(ref1.seur, features = check.markers.refb, cols = color.ref1.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0.01) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref1b
+``` 
+
+```{r fig.width=13.5, fig.height=25}
+vln.ref1b.s <- VlnPlot(ref1.seur, features = check.markers.refb, cols = color.ref1.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref1b.s
+``` 
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/ref1.Cell2020/violin.check_markers.norm.ref1.Cell2020.pdf",
+       width = 13.5, height = 25,
+       plot = vln.ref1b)
+
+ggsave("./figures.202409/ref1.Cell2020/violin.check_markers.norm.ref1.Cell2020.s.pdf",
+       width = 13.5, height = 25,
+       plot = vln.ref1b.s)
+```
+
+
+```{r fig.width=12, fig.height=25}
+vln.ref2b <- VlnPlot(ref2.seur, features = check.markers.refb, cols = color.ref2.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0.01) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref2b
+``` 
+
+
+```{r fig.width=12, fig.height=25}
+vln.ref2b.s <- VlnPlot(ref2.seur, features = check.markers.refb, cols = color.ref2.2,
+                    assay = "RNA", group.by = "Anno2", ncol = 2, pt.size = 0) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black", alpha=0.55)
+vln.ref2b.s
+``` 
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/ref2.NatNeur2021/violin.check_markers.norm.ref2.NatNeur2021.pdf",
+       width = 12, height = 25,
+       plot = vln.ref2b)
+
+ggsave("./figures.202409/ref2.NatNeur2021/violin.check_markers.norm.ref2.NatNeur2021.s.pdf",
+       width = 12, height = 25,
+       plot = vln.ref2b.s)
+```
+        
+          
+##### I don't really think it's a very proper way to normalize and compare like this
+##### many factors would affect the result bias, including sampling and datatype and datasize
+##### datatype (single cells vs single nuclei) shoud be the biggest issue !
+          
+##### just a test result !!            
+           
+          
+```{r fig.width=4, fig.height=3.6}
+vln.Tac1.ref1a <- VlnPlot(ref1.seur, features = c("Tac1","Tac1.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Tac1.ref1a
+
+vln.Vip.ref1a <- VlnPlot(ref1.seur, features = c("Vip","Vip.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Vip.ref1a
+
+vln.Gal.ref1a <- VlnPlot(ref1.seur, features = c("Gal","Gal.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Gal.ref1a
+
+vln.Nmu.ref1a <- VlnPlot(ref1.seur, features = c("Nmu","Nmu.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Nmu.ref1a
+```
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("./figures.202409/ref1.Cell2020/violin.ref1.raw_norm.Tac1.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Tac1.ref1a)
+
+ggsave("./figures.202409/ref1.Cell2020/violin.ref1.raw_norm.Vip.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Vip.ref1a)
+
+ggsave("./figures.202409/ref1.Cell2020/violin.ref1.raw_norm.Gal.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Gal.ref1a)
+
+ggsave("./figures.202409/ref1.Cell2020/violin.ref1.raw_norm.Nmu.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Nmu.ref1a)
+```
+
+
+
+```{r fig.width=4, fig.height=3.6}
+vln.Tac1.ref2a <- VlnPlot(ref2.seur, features = c("Tac1","Tac1.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Tac1.ref2a
+
+vln.Vip.ref2a <- VlnPlot(ref2.seur, features = c("Vip","Vip.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Vip.ref2a
+
+vln.Gal.ref2a <- VlnPlot(ref2.seur, features = c("Gal","Gal.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Gal.ref2a
+
+vln.Nmu.ref2a <- VlnPlot(ref2.seur, features = c("Nmu","Nmu.norm"), ncol = 2, group.by = "mark", pt.size = 0.05) &
+    geom_boxplot(outlier.size = 0, fill="white", width=0.2, size=0.1, alpha=0.55) &
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="red", alpha=0.55) & coord_cartesian(ylim = c(-2.5,6))
+vln.Nmu.ref2a
+```
+
+```{r eval=FALSE, include=FALSE}
+#
+ggsave("./figures.202409/ref2.NatNeur2021/violin.ref2.raw_norm.Tac1.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Tac1.ref2a)
+
+ggsave("./figures.202409/ref2.NatNeur2021/violin.ref2.raw_norm.Vip.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Vip.ref2a)
+
+ggsave("./figures.202409/ref2.NatNeur2021/violin.ref2.raw_norm.Gal.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Gal.ref2a)
+
+ggsave("./figures.202409/ref2.NatNeur2021/violin.ref2.raw_norm.Nmu.pdf",
+       width = 4, height = 3.6,
+       plot = vln.Nmu.ref2a)
+```
+
+
+
+
+
+## cell composition          
+
+
+### heatmap        
+
+```{r}
+GEX.seur$FB.info <- factor(as.character(GEX.seur$FB.info),
+                           levels = c(paste0("CTL.",1:4),
+                                      paste0("CKO.",1:4)))
+
+GEX.seur$rep <- paste0("rep",
+                       gsub("CTL|CKO","",as.character(GEX.seur$FB.info)))
+
+```
+
+
+```{r paged.print=FALSE}
+head(GEX.seur@meta.data)
+```
+
+
+
+```{r fig.width=6.4, fig.height=4.5}
+cowplot::plot_grid(
+pheatmap::pheatmap(table(cnt=GEX.seur$FB.info,
+      clusters=GEX.seur$Anno)[],
+                   main = "Cell Count",
+                   gaps_row = c(4),
+      gaps_col = c(5,9,12),
+                   cluster_rows = F, cluster_cols = F, display_numbers = T, number_format = "%.0f", legend = F, silent = T)$gtable,
+
+pheatmap::pheatmap(100*rowRatio(table(cnt=GEX.seur$FB.info,
+                                clusters=GEX.seur$Anno)[] ),
+                   main = "Cell Ratio",
+                   gaps_row = c(4),
+      gaps_col = c(5,9,12),
+                   cluster_rows = F, cluster_cols = F, display_numbers = T, number_format = "%.1f", legend = F, silent =T)$gtable,
+ncol = 1)
+```
+
+### barplot      
+
+```{r}
+stat1_Anno <- GEX.seur@meta.data[,c("cnt","rep","Anno")]
+
+stat1_Anno.s <- stat1_Anno %>%
+  group_by(cnt,rep,Anno) %>%
+  summarise(count=n()) %>%
+  mutate(prop= count/sum(count)) %>%
+  ungroup
+```
+
+```{r eval=FALSE, include=FALSE, paged.print=FALSE}
+write.csv(stat1_Anno.s %>% reshape2::recast(cnt + rep ~ Anno, measure.var = 4), 
+          "figures.202409/composition_Anno.Colon_CR7d.stat_df.count.csv")
+write.csv(stat1_Anno.s %>% reshape2::recast(cnt + rep ~ Anno, measure.var = 5), 
+          "figures.202409/composition_Anno.Colon_CR7d.stat_df.ratio.csv")
+```
+
+
+```{r  fig.height=3.6, fig.width=8.1}
+pcom1.Anno <- stat1_Anno.s %>%
+  ggplot(aes(x = Anno, y = 100*prop, color=cnt)) +
+  geom_bar(stat="summary", fun="mean", position = position_dodge(0.75), width = 0.78, fill="white") +
+  theme_classic(base_size = 15) +
+  scale_color_manual(values = color.cnt, name="") +
+  labs(title="Cell Composition of Colon_CR7d.CTL_CKO, Anno", y = "Proportion") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) +
+  
+  geom_point(aes(x=Anno, y = 100*prop, color= cnt),
+             position = position_dodge(0.75),
+             shape=16,alpha=0.75,size=2.15,
+             stroke=0.15, show.legend=F)
+
+pcom1.Anno
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures.202409/composition_Anno.Colon_CR7d.barplot.pdf",
+       width = 8.1, height = 3.6,
+       plot = pcom1.Anno)
+```
+
+
+#### sig.test          
+
+glm.nb - anova.LRT          
+
+
+```{r message=FALSE, warning=FALSE}
+
+Sort.N <- c("CTL","CKO")
+
+glm.nb_anova.1.Anno <- list()
+
+for(x1 in 1:2){
+  for(x2 in 1:2){
+    if(x2>x1){
+      
+      stat1_Anno.s_N <- stat1_Anno.s %>% filter(cnt %in% c(Sort.N[x1],Sort.N[x2]))
+      
+      total.N <- stat1_Anno.s_N %>%
+        group_by(cnt, rep) %>%
+        summarise(total=sum(count)) %>% ungroup() %>% as.data.frame()
+      
+      rownames(total.N) <- paste0(as.character(total.N$cnt),
+                                  "_",
+                                  as.character(total.N$rep))
+      
+      stat1_Anno.s_N$total <- total.N[paste0(stat1_Anno.s_N$cnt,
+                                            "_",
+                                            stat1_Anno.s_N$rep),"total"]
+      
+      glm.nb_anova.1.Anno[[paste0(Sort.N[x1],"vs",Sort.N[x2])]] <- list()
+      
+      for(AA in levels(stat1_Anno.s_N$Anno)){
+        glm.nb_anova.1.Anno[[paste0(Sort.N[x1],"vs",Sort.N[x2])]][[AA]] <- tryCatch({
+          aaa <- stat1_Anno.s_N %>% filter(Anno==AA)
+          aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=1000)
+          aaa.anova <- anova(aaa.glmnb, test = "LRT")
+          aaa.anova$'Pr(>Chi)'[2]
+        }, error=function(e){
+        
+          tryCatch({
+            aaa <- stat1_Anno.s_N %>% filter(Anno==AA)
+            aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=100)
+            aaa.anova <- anova(aaa.glmnb, test = "LRT")
+            aaa.anova$'Pr(>Chi)'[2]
+          }, error=function(e){
+            
+            tryCatch({
+              aaa <- stat1_Anno.s_N %>% filter(Anno==AA)
+              aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=10)
+              aaa.anova <- anova(aaa.glmnb, test = "LRT")
+              aaa.anova$'Pr(>Chi)'[2]
+            }, error = function(e){
+              NA
+            })     
+          })
+        })
+      }
+      glm.nb_anova.1.Anno[[paste0(Sort.N[x1],"vs",Sort.N[x2])]] <- unlist(glm.nb_anova.1.Anno[[paste0(Sort.N[x1],"vs",Sort.N[x2])]]) 
+    }
+  }
+}
+
+
+```
+
+
+```{r}
+glm.nb_anova.1.Anno_df <- t(data.frame(Reduce(function(x,y){rbind(x,y)},glm.nb_anova.1.Anno)))
+rownames(glm.nb_anova.1.Anno_df) <- names(glm.nb_anova.1.Anno)
+colnames(glm.nb_anova.1.Anno_df) <- gsub("X","C",colnames(glm.nb_anova.1.Anno_df))
+glm.nb_anova.1.Anno_df
+```
+
+
+```{r eval=FALSE, include=FALSE}
+write.csv(glm.nb_anova.1.Anno_df, "figures.202409/composition_Anno.Colon_CR7d.glm.nb_anova.LRT.csv")
+```
+
+
+```{r}
+round(glm.nb_anova.1.Anno_df,4)
+```
+
+```{r}
+#saveRDS(GEX.seur,"./Colon.CR7d.Ahr_CKO.rds")
+```
+
+
+
+## markers         
+               
+(pass)                         
+           
+
+
+## DEGs        
+
+
+```{r}
+#
+Idents(GEX.seur) <- "cnt"
+
+```
+
+
+```{r}
+neur.clusters <- grep("EMN|IMN|IN|IPAN",levels(GEX.seur$Anno), value = T)
+neur.clusters
+```
+
+```{r}
+#
+all_new <- neur.clusters
+all_new
+```
+
+```{r}
+#
+list_new <- list()
+list_new[["All"]] <- all_new
+
+list_new[["EMNs"]] <- grep("EMN",all_new,value = T)
+list_new[["IMNs"]] <- grep("IMN",all_new,value = T)
+
+
+for(NN in all_new){
+  list_new[[NN]] <- NN
+}
+
+names_new <- names(list_new)
+list_new
+```
+
+```{r}
+names_new
+```
+
+
+### run              
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+test.DEGs_new <- list()
+
+for(nn in names_new){
+  test.DEGs_new[[nn]] <- FindAllMarkers(subset(GEX.seur, subset = Anno %in% list_new[[nn]]),
+                                       assay = "RNA",
+                                       only.pos = T,
+                                       min.pct = 0.05,
+                                       logfc.threshold = 0.1,
+                                       test.use = "MAST")
+}
+
+```
+
+
+```{r}
+#test.DEGs_new
+```
+
+
+```{r}
+# save DEGs' table
+df_test.DEGs_new <- data.frame()
+for(nn in names_new){
+
+  df_test.DEGs_new <- rbind(df_test.DEGs_new, data.frame(test.DEGs_new[[nn]],Anno=nn))
+  
+  
+}
+
+#write.csv(df_test.DEGs_new, "Colon_CR7d.DEGs_CTLvsCKO_Anno.csv")
+```
+
+
+#### stat            
+
+
+cut0: padj 0.05  log2FC 0.1   
+cut1: padj 0.05  log2FC 0.3         
+cut2: padj 0.01  log2FC > log2(1.5) (|FC|>1.5)      
+
+
+#### cut0 
+ 
+```{r}
+# cut0
+cut.padj = 0.05
+cut.log2FC = 0.1  
+  
+cut.pct1 = 0.1
+```
+ 
+ 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+stat_test0.DEGs_new <- df_test.DEGs_new %>% filter(p_val_adj < cut.padj & 
+                       abs(avg_log2FC) > cut.log2FC & 
+                       pct.1 > cut.pct1) %>%
+  group_by(Anno,cluster) %>%
+  summarise(up.DEGs = n()) %>% as.data.frame()
+stat_test0.DEGs_new
+``` 
+ 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=7.5, fig.height=4}
+df_test.DEGs_new %>% filter(p_val_adj < cut.padj & 
+                       abs(avg_log2FC) > cut.log2FC & 
+                       pct.1 > cut.pct1) %>%
+  group_by(Anno,cluster) %>%
+  summarise(up.DEGs = n()) %>% as.data.frame() %>%
+  ggplot(aes(x=Anno, y=up.DEGs, color = cluster)) +
+  geom_bar(stat="summary", fun="mean", position = position_dodge(0.75), width = 0.58, fill="white") +
+  geom_text(aes(label = up.DEGs),vjust=-0.21, show.legend = F, position = position_dodge(0.75) ) +
+  theme_classic(base_size = 15) +
+  scale_color_manual(values = color.cnt, name="") +
+  labs(title=paste0("up.DEGs stat, pct.1>",cut.pct1,", padj<",cut.padj,", |log2FC|>",cut.log2FC), y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6),
+        title =element_text(size=12, face='bold'))
+```
+ 
+ 
+#### cut1           
+
+```{r}
+# cut1
+cut.padj = 0.05
+cut.log2FC = 0.3  
+  
+cut.pct1 = 0.1
+```
+ 
+ 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+stat_test1.DEGs_new <- df_test.DEGs_new %>% filter(p_val_adj < cut.padj & 
+                       abs(avg_log2FC) > cut.log2FC & 
+                       pct.1 > cut.pct1) %>%
+  group_by(Anno,cluster) %>%
+  summarise(up.DEGs = n()) %>% as.data.frame()
+stat_test1.DEGs_new
+```  
+ 
+ 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=7.5, fig.height=4}
+df_test.DEGs_new %>% filter(p_val_adj < cut.padj & 
+                       abs(avg_log2FC) > cut.log2FC & 
+                       pct.1 > cut.pct1) %>%
+  group_by(Anno,cluster) %>%
+  summarise(up.DEGs = n()) %>% as.data.frame() %>%
+  ggplot(aes(x=Anno, y=up.DEGs, color = cluster)) +
+  geom_bar(stat="summary", fun="mean", position = position_dodge(0.75), width = 0.58, fill="white") +
+  geom_text(aes(label = up.DEGs),vjust=-0.21, show.legend = F, position = position_dodge(0.75) ) +
+  theme_classic(base_size = 15) +
+  scale_color_manual(values = color.cnt, name="") +
+  labs(title=paste0("up.DEGs stat, pct.1>",cut.pct1,", padj<",cut.padj,", |log2FC|>",cut.log2FC), y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6),
+        title =element_text(size=12, face='bold'))
+``` 
+ 
+#### cut2            
+
+```{r}
+# cut2
+cut.padj = 0.01
+cut.log2FC = log2(1.5)  
+  
+cut.pct1 = 0.1
+```
+ 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+stat_test2.DEGs_new <- df_test.DEGs_new %>% filter(p_val_adj < cut.padj & 
+                       abs(avg_log2FC) > cut.log2FC & 
+                       pct.1 > cut.pct1) %>%
+  group_by(Anno,cluster) %>%
+  summarise(up.DEGs = n()) %>% as.data.frame()
+stat_test2.DEGs_new
+```   
+ 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=7.5, fig.height=4}
+df_test.DEGs_new %>% filter(p_val_adj < cut.padj & 
+                       abs(avg_log2FC) > cut.log2FC & 
+                       pct.1 > cut.pct1) %>%
+  group_by(Anno,cluster) %>%
+  summarise(up.DEGs = n()) %>% as.data.frame() %>%
+  ggplot(aes(x=Anno, y=up.DEGs, color = cluster)) +
+  geom_bar(stat="summary", fun="mean", position = position_dodge(0.75), width = 0.58, fill="white") +
+  geom_text(aes(label = up.DEGs),vjust=-0.21, show.legend = F, position = position_dodge(0.75) ) +
+  theme_classic(base_size = 15) +
+  scale_color_manual(values = color.cnt, name="") +
+  labs(title=paste0("up.DEGs stat, pct.1>",cut.pct1,", padj<",cut.padj,", |log2FC|>","log2(1.5)"), y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6),
+        title =element_text(size=12, face='bold'))
+``` 
+ 
+
+```{r eval=FALSE, include=FALSE}
+write.csv(stat_test0.DEGs_new,"figures.202409/stat_DEGs.Colon_CR7d.Anno_CTLvsCKO.pct0.1_padj0.05_log2FC0.1.csv")
+write.csv(stat_test1.DEGs_new,"figures.202409/stat_DEGs.Colon_CR7d.Anno_CTLvsCKO.pct0.1_padj0.05_log2FC0.3.csv")
+write.csv(stat_test2.DEGs_new,"figures.202409/stat_DEGs.Colon_CR7d.Anno_CTLvsCKO.pct0.1_padj0.01_FC1.5.csv")
+```
+
+
+#### plot         
+
+
+```{r}
+pp_test.DEGs.new <- lapply(list_new, function(x){NA})
+```
+
+
+```{r}
+#
+test.DEGs_new.combine <- test.DEGs_new
+test.DEGs_new.combine <- lapply(test.DEGs_new.combine, function(x){
+  x[x$cluster=="CTL","avg_log2FC"] <- -x[x$cluster=="CTL","avg_log2FC"]
+  x
+})
+
+```
+
+
+#### All           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$All <- test.DEGs_new.combine$All %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="All CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$All
+```
+
+
+#### EMNs           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$EMNs <- test.DEGs_new.combine$EMNs %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="EMNs CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$EMNs
+```
+
+
+#### IMNs           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IMNs <- test.DEGs_new.combine$IMNs %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IMNs CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IMNs
+```
+
+
+#### EMN1           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$EMN1 <- test.DEGs_new.combine$EMN1 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="EMN1 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$EMN1
+```
+
+
+#### EMN2           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$EMN2 <- test.DEGs_new.combine$EMN2 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="EMN2 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$EMN2
+```
+
+
+#### EMN3           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$EMN3 <- test.DEGs_new.combine$EMN3 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="EMN3 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$EMN3
+```
+
+
+#### EMN4           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$EMN4 <- test.DEGs_new.combine$EMN4 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="EMN4 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$EMN4
+```
+
+
+#### EMN5           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$EMN5 <- test.DEGs_new.combine$EMN5 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="EMN5 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$EMN5
+```
+
+
+#### IMN1           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IMN1 <- test.DEGs_new.combine$IMN1 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IMN1 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IMN1
+```
+
+
+#### IMN2           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IMN2 <- test.DEGs_new.combine$IMN2 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IMN2 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IMN2
+```
+
+
+#### IMN3           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IMN3 <- test.DEGs_new.combine$IMN3 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IMN3 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IMN3
+```
+
+
+#### IMN4           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IMN4 <- test.DEGs_new.combine$IMN4 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IMN4 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IMN4
+```
+
+
+#### IN1           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IN1 <- test.DEGs_new.combine$IN1 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IN1 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IN1
+```
+
+
+#### IN2           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IN2 <- test.DEGs_new.combine$IN2 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IN2 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IN2
+```
+
+
+#### IN3           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IN3 <- test.DEGs_new.combine$IN3 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IN3 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IN3
+```
+
+
+#### IPAN1           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IPAN1 <- test.DEGs_new.combine$IPAN1 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IPAN1 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IPAN1
+```
+
+
+#### IPAN2           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IPAN2 <- test.DEGs_new.combine$IPAN2 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IPAN2 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IPAN2
+```
+
+
+#### IPAN3           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IPAN3 <- test.DEGs_new.combine$IPAN3 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IPAN3 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IPAN3
+```
+
+
+#### IPAN4           
+
+```{r fig.width=13.5, fig.height=6.5}
+pp_test.DEGs.new$IPAN4 <- test.DEGs_new.combine$IPAN4 %>%
+  mutate(label=ifelse(((p_val_adj < 1e-3 & avg_log2FC<0) | (p_val_adj < 1e-3 & avg_log2FC>0) | (p_val_adj < 0.05 & abs(avg_log2FC) > 0.1)) &
+                        #!grepl("^Gm|^Hsp|^Rps|^Rpl|Rik$|Xist|Tsix|Uty|Ddx3y|Eif2s3y|Kdm5d",gene),gene,""),
+                        !grepl("^Rps|^Rpl",gene),gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC<0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC>0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-60,p_val_adj+1e-60,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=2.5, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.cnt[1]),
+                               "CKO"=as.vector(color.cnt[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title="IPAN4 CTL vs CKO") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept = c(-0.1,0.1), linetype="dotted")
+pp_test.DEGs.new$IPAN4
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(XX in names(pp_test.DEGs.new)){
+  
+  ggsave(paste0("./figures.202409/volcano.Colon_CR7d.CTLvsCKO/volcano.Colon_CR7d.Ahr_CTLvsCKO.",XX,".pdf"),
+         width = 13.5,height = 6.5,
+         plot = pp_test.DEGs.new[[XX]])
+  
+}
+```
+
+
+
+###### end         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

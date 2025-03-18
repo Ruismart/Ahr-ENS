@@ -1,0 +1,720 @@
+---
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+---
+
+
+# sn-ENS neuron integration          
+
+for all current Baf53cre  Ahr CTL/CKO data               
+
+
+```{r}
+#### sample info
+## processed obj
+##
+#  CR7d    CTL  x4   CKO  x3 (x1 CKO failed)
+#     20231220
+#
+#  Steady state   CTL  x3   CKO  x3
+#     20240318
+#
+#
+##
+```
+
+
+```{r message=FALSE, warning=FALSE}
+source("/Shared_win/projects/RNA_normal/analysis.10x.r")
+```
+
+
+## load processed obj           
+
+
+```{r}
+merged.list <- list(CR7d.CTL_CKO=readRDS("I:/Shared_win/projects/20231220_10x_SZJ/analysis_plus/GEX0131.seur.Anno2.rds"),
+                    Stst.CTL_CKO=readRDS("I:/Shared_win/projects/20240318_10x_SZJ/analysis_plus/GEX0430.seur.pure_Anno.rds")
+                    )
+
+
+merged.list
+```
+
+
+```{r}
+lapply(merged.list, function(x){unique(x$FB.info)})
+```
+
+
+```{r}
+lapply(merged.list, function(x){unique(x$cnt)})
+```
+
+
+```{r}
+lapply(merged.list, function(x){unique(x$rep)})
+```
+
+
+### modify FB.info       
+
+
+rebuild cnt and rep as:        
+      
+            
+CR7d.CTL             
+CR7d.CKO   
+        
+Stst.CTL             
+Stst.CKO   
+
+
+#### CR7d.CTL_CKO            
+
+```{r}
+#
+merged.list$CR7d.CTL_CKO$sample <- as.character(merged.list$CR7d.CTL_CKO$FB.info)
+
+merged.list$CR7d.CTL_CKO$sample <- as.vector(unlist(sapply(merged.list$CR7d.CTL_CKO$sample, function(x){
+  gsub("CTL.","CR7d.CTL",x)
+})))
+merged.list$CR7d.CTL_CKO$sample <- as.vector(unlist(sapply(merged.list$CR7d.CTL_CKO$sample, function(x){
+  gsub("CKO.","CR7d.CKO",x)
+})))
+
+merged.list$CR7d.CTL_CKO$cnt <- gsub("1$|2$|3$|4$","",as.character(merged.list$CR7d.CTL_CKO$sample))
+
+merged.list$CR7d.CTL_CKO$sample[merged.list$CR7d.CTL_CKO$sample %in% "CR7d.CKO3"] <- "CR7d.CKO2"
+merged.list$CR7d.CTL_CKO$sample[merged.list$CR7d.CTL_CKO$sample %in% "CR7d.CKO4"] <- "CR7d.CKO3"
+
+merged.list$CR7d.CTL_CKO$rep <- paste0("rep",
+                                       gsub("CR7d.CTL|CR7d.CKO","",as.character(merged.list$CR7d.CTL_CKO$sample)))
+
+merged.list$CR7d.CTL_CKO$tissue <- "Ileum"
+```
+
+
+```{r}
+head(merged.list$CR7d.CTL_CKO$FB.info,10)
+head(merged.list$CR7d.CTL_CKO$sample,10)
+head(merged.list$CR7d.CTL_CKO$cnt,10)
+head(merged.list$CR7d.CTL_CKO$rep,10)
+head(merged.list$CR7d.CTL_CKO$tissue,10)
+```
+
+
+#### Stst.CTL_CKO            
+
+```{r}
+#
+merged.list$Stst.CTL_CKO$sample <- as.character(merged.list$Stst.CTL_CKO$FB.info)
+
+merged.list$Stst.CTL_CKO$sample <- as.vector(unlist(sapply(merged.list$Stst.CTL_CKO$sample, function(x){
+  gsub("CTL.","Stst.CTL",x)
+})))
+merged.list$Stst.CTL_CKO$sample <- as.vector(unlist(sapply(merged.list$Stst.CTL_CKO$sample, function(x){
+  gsub("CKO.","Stst.CKO",x)
+})))
+
+merged.list$Stst.CTL_CKO$cnt <- gsub("1$|2$|3$|4$","",as.character(merged.list$Stst.CTL_CKO$sample))
+
+merged.list$Stst.CTL_CKO$rep <- paste0("rep",
+                                       gsub("Stst.CTL|Stst.CKO","",as.character(merged.list$Stst.CTL_CKO$sample)))
+
+merged.list$Stst.CTL_CKO$tissue <- "Ileum"
+```
+
+
+```{r}
+head(merged.list$Stst.CTL_CKO$FB.info,10)
+head(merged.list$Stst.CTL_CKO$sample,10)
+head(merged.list$Stst.CTL_CKO$cnt,10)
+head(merged.list$Stst.CTL_CKO$rep,10)
+head(merged.list$Stst.CTL_CKO$tissue,10)
+```
+
+
+### merge                   
+                       
+             
+```{r}
+all.batch.merged <- merge(merged.list[[1]],
+                          merged.list[2:length(merged.list)],
+                          merge.data=T)
+all.batch.merged
+```
+
+```{r}
+rm(merged.list)
+gc()
+```
+
+```{r}
+unique(all.batch.merged$cnt)
+```
+
+```{r}
+unique(all.batch.merged$rep)
+```
+
+```{r}
+all.batch.merged$cnt <- factor(as.character(all.batch.merged$cnt),
+                               levels = c("Stst.CTL","Stst.CKO",
+                                          "CR7d.CTL","CR7d.CKO"))
+head(all.batch.merged$cnt)
+```
+
+
+```{r}
+# modify orig.ident
+all.batch.merged$orig.ident <- as.character(all.batch.merged$cnt)
+
+all.batch.merged$orig.ident[all.batch.merged$orig.ident %in% c("Stst.CTL","Stst.CKO")] <- "Stst.CTL_CKO"
+all.batch.merged$orig.ident[all.batch.merged$orig.ident %in% c("CR7d.CTL","CR7d.CKO")] <- "CR7d.CTL_CKO"
+
+
+all.batch.merged$orig.ident <- factor(all.batch.merged$orig.ident,
+                                      levels = c("Stst.CTL_CKO","CR7d.CTL_CKO"))
+
+head(all.batch.merged$orig.ident)
+```
+
+```{r}
+table(all.batch.merged@meta.data[,c("orig.ident","cnt")])
+```
+
+```{r}
+table(all.batch.merged@meta.data[,c("orig.ident","sample")])
+```
+
+
+## Integration                         
+
+```{r}
+#Idents(all.batch.merged) <- "cnt"
+Idents(all.batch.merged) <- "orig.ident"
+
+head(all.batch.merged@active.ident)
+```
+
+```{r}
+gc()
+```
+
+
+```{r}
+all.batch.merged
+```
+
+
+### SCT              
+
+```{r}
+batchcor.seu.list <- list()
+
+#for(ttt in levels(all.batch.merged$cnt)){
+#  ttt.seu <- subset(all.batch.merged, subset=cnt == ttt)
+#  Idents(ttt.seu) <- "rep"
+for(ttt in levels(all.batch.merged$orig.ident)){
+  ttt.seu <- subset(all.batch.merged, subset=orig.ident == ttt)
+  Idents(ttt.seu) <- "sample"
+  ttt.seu <- SCTransform(ttt.seu, variable.features.n = 3000, vst.flavor="v2",
+                         return.only.var.genes = FALSE)
+  batchcor.seu.list[[ttt]] <- ttt.seu
+}
+```
+
+
+
+```{r}
+gc()
+```
+
+
+```{r}
+rm(ttt.seu)
+rm(all.batch.merged)
+gc()
+```
+
+
+```{r}
+feature.raw <- SelectIntegrationFeatures(object.list = batchcor.seu.list, nfeatures = 3000)
+head(feature.raw,300)
+```
+
+
+```{r}
+DIG <- grep("^mt-|^Tra|^Trb|^Trg|^Trd|^Tcr|^Igm|^Igh|^Igk|^Igl|Jchain|Mzb1|Vpreb|^Hsp|^Rps|^Rpl|Hbb-|Hba-|^Dnaj|^Jun|^Fos|^AY|^AA|^AC|^AI|^AW|^BC|^Gm|^Hist|Lars2|Rik$|-ps",
+            feature.raw,value = T)
+
+# gender-relaged genes
+GRG <- c("Xist","Tsix","Uty","Ddx3y","Eif2s3y","Kdm5d")
+
+CC_gene <- Hmisc::capitalize(tolower(as.vector(unlist(cc.genes.updated.2019))))
+```
+
+
+```{r}
+DIG
+```
+
+```{r}
+CC_gene
+```
+
+
+```{r}
+features.filt <- setdiff(feature.raw, c(DIG,CC_gene,GRG))
+length(features.filt)
+head(features.filt,300)
+```
+
+
+```{r}
+length(feature.raw)
+length(features.filt)
+```
+
+
+```{r}
+GRG %in% feature.raw
+GRG %in% features.filt
+```
+
+
+### anchors                    
+            
+            
+```{r}
+all.anchors <- FindIntegrationAnchors(object.list = batchcor.seu.list,
+                                      dims = 1:50,
+                                      anchor.features = features.filt)
+```
+
+
+```{r}
+all.anchors
+```
+
+
+### Integration              
+
+```{r}
+all.anchors <- IntegrateData(anchorset = all.anchors, dims = 1:50)
+```
+
+
+```{r}
+all.anchors
+```
+
+
+```{r}
+all.anchors@assays$SCT@SCTModel.list
+```
+
+
+```{r}
+#rm(batchcor.seu.list)
+gc()
+```
+
+```{r}
+#head(all.anchors$orig.ident)
+#unique(all.anchors$orig.ident)
+```
+
+```{r}
+unique(all.anchors$cnt)
+```
+
+
+```{r}
+#
+all.anchors$orig.ident <- factor(all.anchors$orig.ident,
+                                 levels = c("Stst.CTL_CKO","CR7d.CTL_CKO"))
+
+# 
+```
+
+
+```{r}
+#table(all.anchors@meta.data[,c("cnt","condition")])
+```
+
+
+```{r}
+table(all.anchors@meta.data[,c("cnt","orig.ident")])
+```
+
+
+
+```{r fig.width=12, fig.height=7.5}
+VlnPlot(all.anchors, features = GRG, group.by = "sample", assay = "RNA")
+```
+
+
+all males          
+
+
+#### clustering               
+
+```{r}
+all.anchors <- ScaleData(object = all.anchors, verbose = TRUE, 
+                         vars.to.regress = c("percent.mt","percent.rb","nCount_RNA"))
+```
+
+
+```{r}
+# sample condition to regress
+#   cnt ?
+#   orig.idnet ?
+#   condition ?
+#   sex ?
+```
+
+
+
+```{r}
+gc()
+```
+
+
+```{r}
+length(all.anchors@assays$integrated@var.features)
+```
+
+
+```{r}
+all.anchors <- RunPCA(all.anchors, do.print = TRUE,
+                      features = all.anchors@assays$integrated@var.features,
+                      seed.use = 133,
+                      npcs = 100,
+                      #ndims.print = 1,
+                      verbose = T)
+```
+
+```{r fig.width=12,fig.height=18}
+DimHeatmap(all.anchors, dims = 1:12, cells = 1500, balanced = TRUE,ncol = 4)
+```
+
+
+```{r}
+ElbowPlot(all.anchors, ndims = 100)
+```
+
+
+```{r}
+ElbowPlot(all.anchors, ndims = 50)
+```
+
+
+## Integrated                
+
+
+```{r paged.print=FALSE}
+
+all.anchors@meta.data[,grep("snn|pANN|cluster|sort|preAnno|snn|Doublet",colnames(all.anchors@meta.data))] <- NULL
+
+head(all.anchors@meta.data)
+```
+
+
+```{r}
+DefaultAssay(all.anchors) <- "integrated"
+PCsct <- 1:21
+```
+
+
+```{r}
+all.anchors <- FindNeighbors(all.anchors, k.param = 20, dims = PCsct, compute.SNN = T, reduction = 'pca', verbose = T)
+all.anchors <- FindClusters(all.anchors, dims.use = PCsct, algorithm = 1, save.SNN =T, resolution =2, reduction = 'pca', verbose = T)
+```
+
+
+```{r}
+all.anchors <- RunTSNE(object = all.anchors, assay = "integrated", seed.use = 233, dims = PCsct, complexity=100)
+all.anchors <- RunUMAP(object = all.anchors, assay = "integrated", seed.use = 888, dims = PCsct, n.neighbors = 20, min.dist = 0.3)
+```
+
+
+```{r fig.width=11.5, fig.height=4.5}
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'tsne', group.by = "seurat_clusters") +
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "seurat_clusters")
+```
+
+
+```{r fig.width=10.8, fig.height=4.5}
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'tsne', group.by = "Anno1") +
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno1")
+```
+
+
+```{r fig.width=10.8, fig.height=4.5}
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'tsne', group.by = "Anno2") +
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno2")
+```
+
+
+```{r}
+color.cnt <- scales::hue_pal()(4)[c(2,1,3,4)]
+color.cnt
+```
+
+
+```{r}
+all.anchors$cnt <- factor(as.character(all.anchors$cnt),
+                            levels = c("Stst.CTL","Stst.CKO",
+                                       "CR7d.CTL","CR7d.CKO"))
+
+```
+
+
+```{r  fig.width=12.6, fig.height=3.9}
+DimPlot(all.anchors, label = F, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "cnt", split.by = "cnt", ncol = 4, cols = color.cnt)
+```
+
+
+```{r fig.width=10.8, fig.height=4.5}
+DimPlot(all.anchors, label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno1") +
+DimPlot(all.anchors, label = F, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "cnt",cols = color.cnt)
+```
+
+
+```{r fig.width=10.8, fig.height=4.5}
+DimPlot(subset(all.anchors, subset = cnt %in% c("Stst.CTL","Stst.CKO")), label = F, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "cnt", cols = color.cnt[1:2]) +
+DimPlot(subset(all.anchors, subset = cnt %in% c("CR7d.CTL","CR7d.CKO")), label = F, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "cnt", cols = color.cnt[3:4])
+```
+
+```{r fig.width=7.5,fig.height=6}
+FeaturePlot(all.anchors, 
+            reduction = "umap", features = c("nFeature_RNA","nCount_RNA","percent.mt","percent.rb"))
+FeaturePlot(subset(all.anchors, subset = cnt %in% c("Stst.CTL","Stst.CKO")),
+            reduction = "umap", features = c("nFeature_RNA","nCount_RNA","percent.mt","percent.rb"))
+FeaturePlot(subset(all.anchors, subset = cnt %in% c("CR7d.CTL","CR7d.CKO")), 
+            reduction = "umap", features = c("nFeature_RNA","nCount_RNA","percent.mt","percent.rb"))
+```
+
+
+
+```{r}
+all.anchors$sort_clusters <- factor(as.character(all.anchors$seurat_clusters),
+                                    levels = c(4,6,0,2,31,14,19,13,7,8,17,
+                                               5,3,9,1,18,28,11,26,
+                                               10,22,21, 25,
+                                               12,27,30,15, 16,24,23, 29, 20))
+```
+
+
+
+```{r fig.width=12, fig.height=6}
+VlnPlot(subset(all.anchors, subset = cnt %in% c("Stst.CTL","Stst.CKO")), 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 2, pt.size = 0.01, group.by = "Anno1")
+VlnPlot(subset(all.anchors, subset = cnt %in% c("CR7d.CTL","CR7d.CKO")), 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 2, pt.size = 0.01, group.by = "Anno1")
+```
+
+
+```{r fig.width=12, fig.height=6}
+VlnPlot(subset(all.anchors, subset = cnt %in% c("Stst.CTL","Stst.CKO")), 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 2, pt.size = 0.01, group.by = "sort_clusters")
+VlnPlot(subset(all.anchors, subset = cnt %in% c("CR7d.CTL","CR7d.CKO")), 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 2, pt.size = 0.01, group.by = "sort_clusters")
+```
+
+might need to exclude mix-like C27/30 and low-quality like C31           
+          
+
+
+## check markers            
+
+```{r}
+DefaultAssay(all.anchors) <- "SCT"
+DefaultAssay(all.anchors)
+```
+
+
+
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+# find markers for every cluster compared to all remaining cells, with 'onlypos=F' 
+Idents(all.anchors) <- "sort_clusters"
+
+all.anchors <- PrepSCTFindMarkers(all.anchors, assay = "SCT")
+```
+
+```{r}
+options (scipen = 2)
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+GEX.markers.pre <- FindAllMarkers(all.anchors, only.pos = FALSE, min.pct = 0.05,
+                                  assay = "SCT",
+                                  test.use = "MAST",
+                                  logfc.threshold = 0.25)
+#GEX.markers.pre <- read.table("sn10x_integration.markers.SCT_sort.check_pre.csv", header = TRUE, sep = ",")
+GEX.markers.pre %>% group_by(cluster) %>% top_n(n = 8, wt = avg_log2FC)
+```
+                
+             
+```{r eval=FALSE, include=FALSE}
+write.table(GEX.markers.pre, 
+            "sn10x_integration.markers.SCT_sort.check_pre.csv", 
+            col.names = TRUE,
+            row.names = FALSE,
+            quote = F,
+            sep = ",")
+```
+
+
+### topmarkers             
+
+
+```{r}
+markers.pre_t60 <- (GEX.markers.pre %>% group_by(cluster) %>% 
+                  filter(pct.1>0.05 & gene %in% grep("Rps|Rpl|mt-|Gm",GEX.markers.pre$gene,invert = T,value = T)) %>%
+                   top_n(n = 60, wt = avg_log2FC) %>%
+                    filter(p_val_adj < 0.01) %>%
+                   ungroup() %>%
+  arrange(desc(avg_log2FC*pct.1),gene) %>%
+                             distinct(gene, .keep_all = TRUE) %>%
+                             arrange(cluster,p_val_adj))$gene
+
+markers.pre_t120 <- (GEX.markers.pre %>% group_by(cluster) %>% 
+                  filter(pct.1>0.05 & gene %in% grep("Rps|Rpl|mt-|Gm",GEX.markers.pre$gene,invert = T,value = T)) %>%
+                   top_n(n = 120, wt = avg_log2FC) %>%
+                    filter(p_val_adj < 0.01) %>%
+                   ungroup() %>%
+  arrange(desc(avg_log2FC*pct.1),gene) %>%
+                             distinct(gene, .keep_all = TRUE) %>%
+                             arrange(cluster,p_val_adj))$gene
+```
+
+
+          
+```{r}
+ttt = 889
+ttt/60
+ttt/64
+ttt/65
+```  
+
+
+```{r fig.height=11.4, fig.width=8.5, message=FALSE, warning=FALSE}
+
+pp.t120 <- list()
+
+for(i in 1:15){
+pp.t120[[i]] <- DotPlot(all.anchors, features = rev(markers.pre_t120[(60*i-59):(60*i)]), group.by = "sort_clusters")  + coord_flip() + 
+           theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+}
+
+pp.t120
+``` 
+
+             
+```{r eval=FALSE, include=FALSE}
+#saveRDS(all.anchors, "sn10x_SZJ.sct_anno.rds")
+#all.anchors <- readRDS("sn10x_SZJ.sct_anno.rds")
+```
+
+
+
+```{r fig.width=10.8, fig.height=4.5}
+(DimPlot(subset(all.anchors,subset=cnt %in% c("Stst.CTL","Stst.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno1")+labs(title="Stst only")) +
+(DimPlot(subset(all.anchors,subset=cnt %in% c("CR7d.CTL","CR7d.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno1")+labs(title="CR7d only"))
+```
+
+```{r fig.width=10.8, fig.height=4.5}
+(DimPlot(subset(all.anchors,subset=cnt %in% c("Stst.CTL","Stst.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "seurat_clusters")+labs(title="Stst only")) +
+(DimPlot(subset(all.anchors,subset=cnt %in% c("CR7d.CTL","CR7d.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "seurat_clusters")+labs(title="CR7d only"))
+```
+
+
+```{r fig.width=10.8, fig.height=4.5}
+(DimPlot(subset(all.anchors,subset=cnt %in% c("Stst.CTL","Stst.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno1")+labs(title="Stst only")) +
+(DimPlot(subset(all.anchors,subset=cnt %in% c("Stst.CTL","Stst.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "seurat_clusters")+labs(title="Stst only"))
+```
+
+
+```{r fig.width=10.8, fig.height=4.5}
+(DimPlot(subset(all.anchors,subset=cnt %in% c("CR7d.CTL","CR7d.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "Anno1")+labs(title="CR7d only")) +
+(DimPlot(subset(all.anchors,subset=cnt %in% c("CR7d.CTL","CR7d.CKO")), label = T, pt.size = 0.05, repel = F, reduction = 'umap', group.by = "seurat_clusters")+labs(title="CR7d only"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

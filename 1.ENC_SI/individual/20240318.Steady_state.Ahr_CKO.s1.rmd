@@ -1,0 +1,791 @@
+---
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+--- 
+
+
+# plus sn10x, SI              
+            
+            
+Baf53cre ENS neurons, SI data               
+Steady state, CTL x3  CKO(Ahr-cko) x3                                      
+              
+        
+loading 60k cells,                        
+cellranger called 24,365 cells (demo); 24,604 cells (plus)              
+            
+            
+pure neurons downstream     
+
+          
+
+##### load dependancies                
+```{r message=FALSE, warning=FALSE, include=FALSE}
+source("I:/Shared_win/projects/RNA_normal/analysis.10x.r")
+```  
+
+
+## load obj               
+
+
+```{r}
+GEX.seur <- readRDS("./GEX0429.seur.preAnno.rds")
+GEX.seur
+```
+
+
+```{r}
+color.FB <- ggsci::pal_d3("category20c")(20)[c(1,6,11,#16,
+                                               2,7,12#,17
+                                               )]
+
+color.cnt <- color.FB[c(1,4)]
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno1") +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+### filtering                 
+
+
+```{r}
+GEX.seur <- subset(GEX.seur, subset = preAnno1 %in% levels(GEX.seur$preAnno1)[1:16] & DoubletFinder0.1 == "Singlet")
+GEX.seur
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno1") +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+```{r fig.height=5, fig.width=12.5}
+markers.new.s <- list(EMN=c("Chat","Bnc2","Tox","Ptprt",
+                       "Gfra2","Oprk1","Adamtsl1", 
+                       "Fbxw15","Fbxw24","Chrna7",
+                       "Satb1","Cntnap5b",
+                       "Gabrb1","Nxph1","Lama2","Lrrc7",
+                       "Ryr3","Eda","Tac1",
+                       "Kctd8","Ntrk2","Penk",
+                       "Fut9","Nfatc1","Egfr","Mgll",
+                       "Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       "Man1a","Airn",
+                       "Adcy2","Cmah","Creb5","Vip","Pde1a",
+                       "Ebf1","Gpc5"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Kcnk13",
+                      "Neurod6","Moxd1","Sctr",
+                      "Piezo1","Sst","Adamts9","Kcnn2",
+                      "Calb2"),
+                 IPAN=c("Calcb","Nmu","Adgrg6","Pcdh10",
+                        "Ngfr","Galr1","Il7","Aff2",
+                        "Gpr149","Cdh6","Cdh8",
+                        "Clstn2","Ano2","Ntrk3",
+                        "Cpne4","Vwc2l","Cdh9","Scgn",
+                        "Vcan","Cck","Piezo2","Kcnh7",
+                        "Rerg","Bmpr1b","Skap1","Ntng1",
+                        "Tafa2","Nxph2"),
+                 CONTAM=c("Actl6b","Phox2b"),
+                 pDEGs=c("Grid2","Ide","Btaf1","Cdh10","Slc15a2","Ccser1","Hdac9","Col25a1","Rspo2"))
+
+pm.All_new.s <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "preAnno2",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="All")
+pm.All_new.s
+
+pm.CTL_new.s <- DotPlot(subset(GEX.seur,subset=cnt %in% c("CTL")), features = as.vector(unlist(markers.new.s)), group.by = "preAnno2",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="CTL only")
+pm.CTL_new.s
+
+pm.CKO_new.s <- DotPlot(subset(GEX.seur,subset=cnt %in% c("CKO")), features = as.vector(unlist(markers.new.s)), group.by = "preAnno2",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="CKO only")
+pm.CKO_new.s
+```
+
+
+### re-clustering            
+
+
+```{r message=FALSE, warning=FALSE,fig.width=12,fig.height=5}
+GEX.seur <- FindVariableFeatures(GEX.seur, selection.method = "vst", nfeatures = 1500)
+
+# Identify the 10 most highly variable genes
+#top10 <- head(VariableFeatures(GEX.seur), 10)
+top20 <- head(VariableFeatures(GEX.seur), 20)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(GEX.seur)
+plot2 <- LabelPoints(plot = plot1, points = top20, repel = T)
+plot1 + plot2
+```
+
+```{r}
+head(VariableFeatures(GEX.seur), 200)
+```
+
+
+```{r}
+GEX.seur <- ScaleData(GEX.seur, features = rownames(GEX.seur))
+```
+
+
+#### PCA       
+
+```{r}
+# exclude MT genes  and more 
+
+#DIG <- grep("^Tra|^Trb|^Trg|^Trd|^Tcr|^Igm|^Igh|^Igk|^Igl|Jchain|^Hsp|^Rps|^Rpl|Hbb-|Hba-|^Dnaj|^AY|^Gm|^Hist",rownames(GEX.seur),value = T)
+
+DIG <- grep("^mt-|^Tra|^Trb|^Trg|^Trd|^Tcr|^Igm|^Igh|^Igk|^Igl|Jchain|Mzb1|Vpreb|Lars2|Jun|Fos|^Hsp|^Rps|^Rpl|Hbb-|Hba-|^Dnaj|^AY|^AC|^AA|^AI|^AW|^BC|^Gm|^Hist|Rik$|-ps",
+            rownames(GEX.seur),value = T)
+CC_gene <- Hmisc::capitalize(tolower(as.vector(unlist(cc.genes.updated.2019))))
+
+
+VariableFeatures(GEX.seur) <- setdiff(VariableFeatures(object = GEX.seur),
+                                                c(#MT_gene,
+                                                  DIG, 
+                                                  CC_gene) )
+
+GEX.seur <- RunPCA(GEX.seur, features = VariableFeatures(GEX.seur))
+```
+
+```{r}
+length(setdiff(VariableFeatures(object = GEX.seur),
+                                                c(#MT_gene,
+                                                  DIG,CC_gene)))
+setdiff(VariableFeatures(object = GEX.seur),
+                                                c(#MT_gene,
+                                                  DIG,CC_gene))[1:300]
+```
+
+
+```{r fig.width=11,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "orig.ident") +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "orig.ident")
+```
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "FB.info", cols = color.FB) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "FB.info", cols = color.FB)
+```
+
+
+```{r pcsheat,fig.width=12,fig.height=15}
+DimHeatmap(GEX.seur, dims = 1:12, cells = 1500, balanced = TRUE,ncol = 4)
+```
+
+
+##### decide PCs to use          
+     
+```{r}
+ElbowPlot(GEX.seur,ndims = 50)
+```
+
+```{r}
+PCs <- 1:24
+GEX.seur <- FindNeighbors(GEX.seur, dims = PCs, k.param = 20)
+GEX.seur <- FindClusters(GEX.seur, method = 'igraph' ,resolution = 2)
+```
+
+
+#### Run UMAP/tSNE    
+
+```{r}
+GEX.seur <- RunTSNE(GEX.seur, dims=PCs, complexity = 100)
+GEX.seur <- RunUMAP(GEX.seur, dims=PCs, n.neighbors = 20, seed.use = 145)
+```
+
+
+```{r fig.width=11.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "tsne", label = T) + DimPlot(GEX.seur, reduction = "umap", label = T)
+```
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "preAnno2") +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "seurat_clusters") +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+```{r fig.width=7.5,fig.height=6}
+FeaturePlot(GEX.seur, reduction = "umap", features = c("nFeature_RNA","nCount_RNA","percent.mt","percent.rb"))
+```
+
+
+```{r}
+length(as.vector(unlist(markers.new.s)))
+```
+
+
+```{r fig.width=12, fig.height=57.5}
+FeaturePlot(subset(GEX.seur, subset = cnt %in% c("CTL")),
+              features = as.vector(unlist(markers.new.s)), cols = c("lightgrey","red"))
+```
+
+```{r fig.width=12, fig.height=57.5}
+FeaturePlot(subset(GEX.seur, subset = cnt %in% c("CKO")),
+              features = as.vector(unlist(markers.new.s)), cols = c("lightgrey","red"))
+```
+
+
+## Anno      
+
+
+```{r}
+GEX.seur$sort_clusters <- factor(as.character(GEX.seur$seurat_clusters),
+                                 levels = c(0,1,2,12,11,17,9,10,18,
+                                            4,5,14,8,7,13,16,23,
+                                            6,19,24,
+                                            3,20,
+                                            15,21,
+                                            25,22))
+```
+
+
+
+```{r}
+table(GEX.seur@meta.data[,c("preAnno2","sort_clusters")])
+```
+
+
+
+
+```{r fig.height=5, fig.width=12.5}
+markers.new.s <- list(EMN=c("Chat","Bnc2","Tox","Ptprt",
+                       "Gfra2","Oprk1","Adamtsl1", 
+                       "Fbxw15","Fbxw24","Chrna7",
+                       "Satb1","Cntnap5b",
+                       "Gabrb1","Nxph1","Lama2","Lrrc7",
+                       "Ryr3","Eda","Tac1",
+                       "Kctd8","Ntrk2","Penk",
+                       "Fut9","Nfatc1","Egfr","Mgll",
+                       "Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       "Man1a","Airn",
+                       "Adcy2","Cmah","Creb5","Vip","Pde1a",
+                       "Ebf1","Gpc5"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Kcnk13",
+                      "Neurod6","Moxd1","Sctr",
+                      "Piezo1","Sst","Adamts9","Kcnn2",
+                      "Calb2"),
+                 IPAN=c("Calcb","Nmu","Adgrg6","Pcdh10",
+                        "Ngfr","Galr1","Il7","Aff2",
+                        "Gpr149","Cdh6","Cdh8",
+                        "Clstn2","Ano2","Ntrk3",
+                        "Cpne4","Vwc2l","Cdh9","Scgn",
+                        "Vcan","Cck","Piezo2","Kcnh7",
+                        "Rerg","Bmpr1b","Skap1","Ntng1",
+                        "Tafa2","Nxph2"),
+                 CONTAM=c("Actl6b","Phox2b"),
+                 pDEGs=c("Grid2","Ide","Btaf1","Cdh10","Slc15a2","Ccser1","Hdac9","Col25a1","Rspo2"))
+
+pm.All_new.s <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "sort_clusters",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="All")
+pm.All_new.s
+
+```
+
+
+
+
+
+```{r}
+# Anno1            
+GEX.seur$Anno1 <- as.character(GEX.seur$seurat_clusters)
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(0,1,2,12)] <- "EMN1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(11,17)] <- "EMN2"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(9)] <- "EMN3"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(10)] <- "EMN4"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(18)] <- "EMN5"
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(4,5,14,8)] <- "IMN1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(7,13)] <- "IMN2"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(16)] <- "IMN3"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(23)] <- "IMN4"
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(6)] <- "IN1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(19)] <- "IN2"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(24)] <- "IN3"
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(3,20)] <- "IPAN1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(15,21)] <- "IPAN2"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(25)] <- "IPAN3"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(22)] <- "IPAN4"
+
+
+GEX.seur$Anno1 <- factor(GEX.seur$Anno1,
+                            levels = c(paste0("EMN",1:5),
+                                       paste0("IMN",1:4),
+                                       paste0("IN",1:3),
+                                       paste0("IPAN",1:4)
+                                       ))
+
+
+# Anno2            
+GEX.seur$Anno2 <- as.character(GEX.seur$seurat_clusters)
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(0,1,2,12)] <- "EMN1"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(11,17)] <- "EMN2"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(9)] <- "EMN3"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(10)] <- "EMN4"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(18)] <- "EMN5"
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(4,5,14,8)] <- "IMN1"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(7,13)] <- "IMN2"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(16)] <- "IMN3"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(23)] <- "IMN4"
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(6)] <- "IN1"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(19)] <- "IN2"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(24)] <- "IN3"
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(3)] <- "IPAN1.1"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(20)] <- "IPAN1.2"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(15)] <- "IPAN2.1"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(21)] <- "IPAN2.2"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(25)] <- "IPAN3"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(22)] <- "IPAN4"
+
+
+GEX.seur$Anno2 <- factor(GEX.seur$Anno2,
+                            levels = c(paste0("EMN",1:5),
+                                       paste0("IMN",1:4),
+                                       paste0("IN",1:3),
+                                       paste0("IPAN",c(1.1,1.2,2.1,2.2,3,4))
+                                       ))
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno1") +
+  DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno2")
+```
+
+
+```{r fig.height=5, fig.width=12.5}
+markers.new.s <- list(EMN=c("Chat","Bnc2","Tox","Ptprt",
+                       "Gfra2","Oprk1","Adamtsl1", 
+                       "Fbxw15","Fbxw24","Chrna7",
+                       "Satb1","Cntnap5b",
+                       "Gabrb1","Nxph1","Lama2","Lrrc7",
+                       "Ryr3","Eda","Tac1",
+                       "Kctd8","Ntrk2","Penk",
+                       "Fut9","Nfatc1","Egfr","Mgll",
+                       "Chrm3"
+                       ),
+                 IMN=c("Nos1","Kcnab1",
+                       "Gfra1","Etv1",
+                       "Man1a","Airn",
+                       "Adcy2","Cmah","Creb5","Vip","Pde1a",
+                       "Ebf1","Gpc5"
+                       ),
+                 IN=c("Npas3","Synpr","St18","Gal",
+                      "Kcnk13",
+                      "Neurod6","Moxd1","Sctr",
+                      "Piezo1","Sst","Adamts9","Kcnn2",
+                      "Calb2"),
+                 IPAN=c("Calcb","Nmu","Adgrg6","Pcdh10",
+                        "Ngfr","Galr1","Il7","Aff2",
+                        "Gpr149","Cdh6","Cdh8",
+                        "Clstn2","Ano2","Ntrk3",
+                        "Cpne4","Vwc2l","Cdh9","Scgn",
+                        "Vcan","Cck","Piezo2","Kcnh7",
+                        "Rerg","Bmpr1b","Skap1","Ntng1",
+                        "Tafa2","Nxph2"),
+                 CONTAM=c("Actl6b","Phox2b"),
+                 pDEGs=c("Grid2","Ide","Btaf1","Cdh10","Slc15a2","Ccser1","Hdac9","Col25a1","Rspo2"))
+
+pm.A1_new.s <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "Anno1",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="All Anno1")
+pm.A1_new.s
+
+
+pm.A2_new.s <- DotPlot(GEX.seur, features = as.vector(unlist(markers.new.s)), group.by = "Anno2",
+        cols = c("midnightblue","darkorange1")) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1,size = 9.15))+ scale_y_discrete(limits=rev) + labs(title="All Anno2")
+pm.A2_new.s
+```
+                     
+              
+I have noticed that annotations of EMN1-5 each time are a little different from others ..        
+the boudaries are not that distinct to separate them,               
+better to do integration if have to measure the subtypes for multiple datasets                      
+            
+
+
+## cell composition          
+
+
+```{r}
+GEX.seur$FB.info <- factor(as.character(GEX.seur$FB.info),
+                           levels = c(paste0("CTL.",1:3),
+                                      paste0("CKO.",1:3)))
+```
+
+```{r}
+GEX.seur$rep <- paste0("rep",
+                        gsub("CTL|CKO","",as.character(GEX.seur$FB.info)))
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno1") +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", label = T, group.by = "Anno2") +
+  DimPlot(GEX.seur, reduction = "umap", label = F, group.by = "cnt", cols = color.cnt)
+```
+
+
+### heatmap.1             
+
+
+```{r fig.width=6.4, fig.height=4.5}
+cowplot::plot_grid(
+pheatmap::pheatmap(table(FB.info=GEX.seur$FB.info,
+      clusters=GEX.seur$Anno1),
+                   main = "Cell Count",
+                   gaps_row = c(3),
+      gaps_col = c(5,9,12),
+                   cluster_rows = F, cluster_cols = F, display_numbers = T, number_format = "%.0f", legend = F, silent = T)$gtable,
+
+pheatmap::pheatmap(100*rowRatio(table(FB.info=GEX.seur$FB.info,
+                                clusters=GEX.seur$Anno1)),
+                   main = "Cell Ratio",
+                   gaps_row = c(3),
+      gaps_col = c(5,9,12),
+                   cluster_rows = F, cluster_cols = F, display_numbers = T, number_format = "%.1f", legend = F, silent =T)$gtable,
+ncol = 1)
+```
+
+
+### barplot.1       
+
+
+```{r}
+stat_Anno1 <- GEX.seur@meta.data[,c("cnt","rep","Anno1")]
+
+stat_Anno1.s <- stat_Anno1 %>%
+  group_by(cnt,rep,Anno1) %>%
+  summarise(count=n()) %>%
+  mutate(prop= count/sum(count)) %>%
+  ungroup
+```
+
+
+```{r  fig.height=3.5, fig.width=8.5}
+pcom.Anno1 <- stat_Anno1.s %>%
+  ggplot(aes(x = Anno1, y = 100*prop, color=cnt)) +
+  geom_bar(stat="summary", fun="mean", position = position_dodge(0.75), width = 0.58, fill="white") +
+  theme_classic(base_size = 15) +
+  scale_color_manual(values = c("skyblue","pink"), name="") +
+  labs(title="Cell Composition of SI data, Anno1", y = "Proportion") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) +
+  
+  geom_point(aes(x=Anno1, y = 100*prop, color= cnt),
+             position = position_dodge(0.75),
+             shape=16,alpha=0.75,size=2.15,
+             stroke=0.15, show.legend=F)
+
+pcom.Anno1
+```
+
+
+#### sig.test          
+
+glm.nb - anova.LRT           
+
+
+```{r message=FALSE, warning=FALSE}
+
+Sort.N <- c("CTL","CKO")
+
+glm.nb_anova.Anno1 <- list()
+
+for(x1 in 1:2){
+  for(x2 in 1:2){
+    if(x2>x1){
+      
+      stat_Anno1.s_N <- stat_Anno1.s %>% filter(cnt %in% c(Sort.N[x1],Sort.N[x2]))
+      
+      total.N <- stat_Anno1.s_N %>%
+        group_by(cnt, rep) %>%
+        summarise(total=sum(count)) %>% ungroup() %>% as.data.frame()
+      
+      rownames(total.N) <- paste0(as.character(total.N$cnt),
+                                  "_",
+                                  as.character(total.N$rep))
+      
+      stat_Anno1.s_N$total <- total.N[paste0(stat_Anno1.s_N$cnt,
+                                            "_",
+                                            stat_Anno1.s_N$rep),"total"]
+      
+      glm.nb_anova.Anno1[[paste0(Sort.N[x1],"vs",Sort.N[x2])]] <- list()
+      
+      for(AA in levels(stat_Anno1.s_N$Anno1)){
+        glm.nb_anova.Anno1[[paste0(Sort.N[x1],"vs",Sort.N[x2])]][[AA]] <- tryCatch({
+          aaa <- stat_Anno1.s_N %>% filter(Anno1==AA)
+          aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=1000)
+          aaa.anova <- anova(aaa.glmnb, test = "LRT")
+          aaa.anova$'Pr(>Chi)'[2]
+        }, error=function(e){
+        
+          tryCatch({
+            aaa <- stat_Anno1.s_N %>% filter(Anno1==AA)
+            aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=100)
+            aaa.anova <- anova(aaa.glmnb, test = "LRT")
+            aaa.anova$'Pr(>Chi)'[2]
+          }, error=function(e){
+            
+            tryCatch({
+              aaa <- stat_Anno1.s_N %>% filter(Anno1==AA)
+              aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=10)
+              aaa.anova <- anova(aaa.glmnb, test = "LRT")
+              aaa.anova$'Pr(>Chi)'[2]
+            }, error = function(e){
+              NA
+            })     
+          })
+        })
+      }
+      glm.nb_anova.Anno1[[paste0(Sort.N[x1],"vs",Sort.N[x2])]] <- unlist(glm.nb_anova.Anno1[[paste0(Sort.N[x1],"vs",Sort.N[x2])]]) 
+    }
+  }
+}
+
+
+```
+
+
+```{r}
+glm.nb_anova.Anno1_df <- t(data.frame(Reduce(function(x,y){rbind(x,y)},glm.nb_anova.Anno1)))
+rownames(glm.nb_anova.Anno1_df) <- names(glm.nb_anova.Anno1)
+colnames(glm.nb_anova.Anno1_df) <- gsub("X","C",colnames(glm.nb_anova.Anno1_df))
+glm.nb_anova.Anno1_df
+```
+
+
+```{r}
+round(glm.nb_anova.Anno1_df,5)
+```
+
+
+### heatmap.2             
+
+
+```{r fig.width=6.4, fig.height=4.5}
+cowplot::plot_grid(
+pheatmap::pheatmap(table(FB.info=GEX.seur$FB.info,
+      clusters=GEX.seur$Anno2),
+                   main = "Cell Count",
+                   gaps_row = c(3),
+      gaps_col = c(5,9,12),
+                   cluster_rows = F, cluster_cols = F, display_numbers = T, number_format = "%.0f", legend = F, silent = T)$gtable,
+
+pheatmap::pheatmap(100*rowRatio(table(FB.info=GEX.seur$FB.info,
+                                clusters=GEX.seur$Anno2)),
+                   main = "Cell Ratio",
+                   gaps_row = c(3),
+      gaps_col = c(5,9,12),
+                   cluster_rows = F, cluster_cols = F, display_numbers = T, number_format = "%.1f", legend = F, silent =T)$gtable,
+ncol = 1)
+```
+
+
+
+### barplot.2       
+
+
+```{r}
+stat_Anno2 <- GEX.seur@meta.data[,c("cnt","rep","Anno2")]
+
+stat_Anno2.s <- stat_Anno2 %>%
+  group_by(cnt,rep,Anno2) %>%
+  summarise(count=n()) %>%
+  mutate(prop= count/sum(count)) %>%
+  ungroup
+```
+
+
+```{r  fig.height=3.5, fig.width=8.5}
+pcom.Anno2 <- stat_Anno2.s %>%
+  ggplot(aes(x = Anno2, y = 100*prop, color=cnt)) +
+  geom_bar(stat="summary", fun="mean", position = position_dodge(0.75), width = 0.58, fill="white") +
+  theme_classic(base_size = 15) +
+  scale_color_manual(values = c("skyblue","pink"), name="") +
+  labs(title="Cell Composition of SI data, Anno2", y = "Proportion") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) +
+  
+  geom_point(aes(x=Anno2, y = 100*prop, color= cnt),
+             position = position_dodge(0.75),
+             shape=16,alpha=0.75,size=2.15,
+             stroke=0.15, show.legend=F)
+
+pcom.Anno2
+```
+
+#### sig.test          
+
+glm.nb - anova.LRT           
+
+
+```{r message=FALSE, warning=FALSE}
+
+Sort.N <- c("CTL","CKO")
+
+glm.nb_anova.Anno2 <- list()
+
+for(x1 in 1:2){
+  for(x2 in 1:2){
+    if(x2>x1){
+      
+      stat_Anno2.s_N <- stat_Anno2.s %>% filter(cnt %in% c(Sort.N[x1],Sort.N[x2]))
+      
+      total.N <- stat_Anno2.s_N %>%
+        group_by(cnt, rep) %>%
+        summarise(total=sum(count)) %>% ungroup() %>% as.data.frame()
+      
+      rownames(total.N) <- paste0(as.character(total.N$cnt),
+                                  "_",
+                                  as.character(total.N$rep))
+      
+      stat_Anno2.s_N$total <- total.N[paste0(stat_Anno2.s_N$cnt,
+                                            "_",
+                                            stat_Anno2.s_N$rep),"total"]
+      
+      glm.nb_anova.Anno2[[paste0(Sort.N[x1],"vs",Sort.N[x2])]] <- list()
+      
+      for(AA in levels(stat_Anno2.s_N$Anno2)){
+        glm.nb_anova.Anno2[[paste0(Sort.N[x1],"vs",Sort.N[x2])]][[AA]] <- tryCatch({
+          aaa <- stat_Anno2.s_N %>% filter(Anno2==AA)
+          aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=1000)
+          aaa.anova <- anova(aaa.glmnb, test = "LRT")
+          aaa.anova$'Pr(>Chi)'[2]
+        }, error=function(e){
+        
+          tryCatch({
+            aaa <- stat_Anno2.s_N %>% filter(Anno2==AA)
+            aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=100)
+            aaa.anova <- anova(aaa.glmnb, test = "LRT")
+            aaa.anova$'Pr(>Chi)'[2]
+          }, error=function(e){
+            
+            tryCatch({
+              aaa <- stat_Anno2.s_N %>% filter(Anno2==AA)
+              aaa.glmnb <- MASS::glm.nb(count ~ cnt + offset(log(total)), data = aaa, maxit=10)
+              aaa.anova <- anova(aaa.glmnb, test = "LRT")
+              aaa.anova$'Pr(>Chi)'[2]
+            }, error = function(e){
+              NA
+            })     
+          })
+        })
+      }
+      glm.nb_anova.Anno2[[paste0(Sort.N[x1],"vs",Sort.N[x2])]] <- unlist(glm.nb_anova.Anno2[[paste0(Sort.N[x1],"vs",Sort.N[x2])]]) 
+    }
+  }
+}
+
+
+```
+
+
+```{r}
+glm.nb_anova.Anno2_df <- t(data.frame(Reduce(function(x,y){rbind(x,y)},glm.nb_anova.Anno2)))
+rownames(glm.nb_anova.Anno2_df) <- names(glm.nb_anova.Anno2)
+colnames(glm.nb_anova.Anno2_df) <- gsub("X","C",colnames(glm.nb_anova.Anno2_df))
+glm.nb_anova.Anno2_df
+```
+
+
+```{r}
+round(glm.nb_anova.Anno2_df,5)
+```
+
+
+```{r}
+#saveRDS(GEX.seur,"./GEX0430.seur.pure_Anno.rds")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
