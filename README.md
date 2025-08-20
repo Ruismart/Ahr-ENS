@@ -1,4 +1,4 @@
-<img width="262" height="32" alt="image" src="https://github.com/user-attachments/assets/a449ea0f-f623-4b67-b9a2-3d1a3b4ee359" /># Ahr-ENS
+# Ahr-ENS
 This repository contains code used for: Sun Z, Wang Y, Liu S, Li H, He D, Xu H. Intestinal-region-specific functions of AHR in intrinsic enteric neurons during infections. Cell Rep. 2025 Apr 22;44(4):115524. doi: 10.1016/j.celrep.2025.115524. Epub 2025 Apr 1. PMID: 40178975.             
                
 https://pubmed.ncbi.nlm.nih.gov/40178975/               
